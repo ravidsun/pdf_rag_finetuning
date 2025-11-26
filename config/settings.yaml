@@ -1,0 +1,193 @@
+# PDF to Llama Fine-tuning Pipeline Configuration
+
+# PDF Extraction Settings
+extraction:
+  # Use OCR for scanned PDFs (requires tesseract)
+  use_ocr: false
+  
+  # Batch size for processing multiple PDFs
+  batch_size: 5
+  
+  # Preferred extraction method (auto, pymupdf, pdfplumber, pdfminer, pypdf2)
+  method: auto
+  
+  # Timeout for extraction per PDF (seconds)
+  timeout: 300
+
+# Text Cleaning Settings
+cleaning:
+  # Domain-specific terms to preserve (add your important terms here)
+  preserve_terms:
+    # Examples for medical domain:
+    # - "COVID-19"
+    # - "SARS-CoV-2"
+    # Examples for legal domain:
+    # - "pursuant"
+    # - "heretofore"
+    # Examples for technical domain:
+    # - "API"
+    # - "REST"
+    # - "microservices"
+  
+  # Minimum chunk length to keep (characters)
+  min_chunk_length: 100
+  
+  # Minimum word count per chunk
+  min_word_count: 20
+  
+  # Remove citation brackets [1], [2], etc.
+  remove_citations: false
+  
+  # Remove LaTeX equations
+  remove_equations: false
+  
+  # Aggressive OCR error correction
+  aggressive_ocr_fixing: false
+  
+  # Minimum text length for valid documents
+  min_text_length: 50
+
+# Data Formatting Settings
+formatting:
+  # Maximum sequence length for training
+  max_length: 2048
+  
+  # Size of text chunks
+  chunk_size: 1024
+  
+  # Overlap between chunks
+  chunk_overlap: 128
+  
+  # Shuffle training data
+  shuffle: true
+  
+  # Apply data augmentation
+  augment_data: false
+  
+  # Include metadata in JSONL output
+  include_metadata: false
+  
+  # Output format (alpaca, chatML, raw)
+  output_format: alpaca
+  
+  # Domain-specific prompts for training
+  domain_prompts:
+    - instruction: "Analyze the following technical documentation."
+      response_type: "analysis"
+    - instruction: "Extract key concepts from this domain-specific text."
+      response_type: "extraction"
+    - instruction: "Summarize the main points of this document."
+      response_type: "summary"
+
+# Database Settings
+database:
+  # Database path (null uses default: C:/LLM/tools/pdf_rag_db/processed_pdfs.db)
+  path: C:/LLM/tools/pdf_rag_db/processed_pdfs.db
+  
+  # Auto-backup interval (days)
+  backup_interval: 7
+  
+  # Maximum database size (MB) before warning
+  max_size_mb: 5000
+
+# Processing Settings
+processing:
+  # Batch size for processing
+  batch_size: 5
+  
+  # Skip PDFs that have already been processed
+  skip_existing: true
+  
+  # Quality threshold (high, medium, poor)
+  quality_threshold: medium
+  
+  # Maximum retries for failed extractions
+  max_retries: 2
+  
+  # Save intermediate results
+  save_intermediate: true
+
+# Training Data Export Settings
+export:
+  # Include only unused training examples
+  unused_only: true
+  
+  # Maximum examples per export
+  max_examples: 100000
+  
+  # Split ratio for train/validation
+  train_val_split: 0.9
+  
+  # Validation set size
+  validation_size: 1000
+
+# Logging Settings
+logging:
+  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: INFO
+  
+  # Log file path
+  file: pdf_processing.log
+  
+  # Maximum log file size (MB)
+  max_size_mb: 100
+  
+  # Number of backup log files
+  backup_count: 5
+
+# RunPod Integration Settings (for future use)
+runpod:
+  # GPU type preference
+  gpu_type: "RTX 4090"
+  
+  # Container image for fine-tuning
+  container_image: "runpod/pytorch:2.0.1-py3.10-cuda11.8.0-devel"
+  
+  # Estimated hours needed
+  estimated_hours: 10
+  
+  # Use spot instances
+  use_spot: true
+
+# Model Settings (for reference during fine-tuning)
+model:
+  # Base model
+  base_model: "meta-llama/Llama-3.1-8b"
+  
+  # Fine-tuning method
+  method: "qlora"
+  
+  # LoRA configuration
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.1
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+      - "k_proj"
+      - "o_proj"
+  
+  # Training hyperparameters
+  training:
+    batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 2e-4
+    num_epochs: 3
+    warmup_steps: 100
+    max_steps: 1000
+    
+# Quality Control
+quality_control:
+  # Check for minimum diversity in vocabulary
+  min_vocabulary_diversity: 0.3
+  
+  # Check for reasonable sentence lengths
+  min_avg_sentence_length: 5
+  max_avg_sentence_length: 50
+  
+  # Filter out chunks with too many special characters
+  max_special_char_ratio: 0.2
+  
+  # Filter out chunks that are mostly numbers
+  max_numeric_ratio: 0.5
