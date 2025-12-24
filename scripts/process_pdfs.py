@@ -82,7 +82,10 @@ class PDFProcessor:
                     'min_chunk_length': 100,
                     'min_word_count': 20,
                     'remove_citations': False,
-                    'remove_equations': False
+                    'remove_equations': False,
+                    'normalize_special_chars': True,
+                    'romanize_sanskrit': True,
+                    'romanization_scheme': 'ascii'
                 },
                 'formatting': {
                     'max_length': 2048,
@@ -90,7 +93,14 @@ class PDFProcessor:
                     'chunk_overlap': 128,
                     'shuffle': True,
                     'augment_data': False,
-                    'include_metadata': False
+                    'include_metadata': False,
+                    'include_continuation': False,
+                    'max_output_similarity': 0.75,
+                    'max_summary_ratio': 0.35,
+                    'max_summary_length': 200,
+                    'min_keyword_count': 4,
+                    'max_keyword_count': 8,
+                    'output_format': 'alpaca'
                 },
                 'database': {
                     'path': None  # Will use default
@@ -254,13 +264,15 @@ class PDFProcessor:
             simplified_result = {
                 'filename': extraction_result['filename'],
                 'text': cleaned_text,
+                'chunks': training_chunks,
                 'extraction_method': extraction_result['extraction_method'],
                 'extraction_quality': extraction_result['extraction_quality']
             }
             
+            output_format = self.config.get('formatting', {}).get('output_format', 'alpaca')
             training_data = self.formatter.format_for_training(
                 [simplified_result],
-                output_format='alpaca'
+                output_format=output_format
             )
             
             # Step 6: Insert training examples into database

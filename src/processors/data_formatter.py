@@ -10,6 +10,9 @@ from pathlib import Path
 import logging
 from datetime import datetime
 import random
+import re
+from difflib import SequenceMatcher
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,12 @@ class DataFormatter:
         self.max_length = self.config.get('max_length', 2048)
         self.chunk_size = self.config.get('chunk_size', 1024)
         self.chunk_overlap = self.config.get('chunk_overlap', 128)
+        self.include_continuation = self.config.get('include_continuation', False)
+        self.max_output_similarity = self.config.get('max_output_similarity', 0.75)
+        self.max_summary_ratio = self.config.get('max_summary_ratio', 0.35)
+        self.max_summary_length = self.config.get('max_summary_length', 200)
+        self.min_keyword_count = self.config.get('min_keyword_count', 4)
+        self.max_keyword_count = self.config.get('max_keyword_count', 8)
         
         # Instruction templates for different training styles
         self.instruction_templates = {
@@ -64,9 +73,15 @@ class DataFormatter:
         
         # Load domain-specific prompts if provided
         self.domain_prompts = self.config.get('domain_prompts', [])
+
+        self._stopwords = {
+            "the", "and", "or", "of", "to", "in", "a", "an", "is", "are", "was", "were",
+            "for", "on", "with", "as", "by", "at", "from", "that", "this", "it", "be",
+            "can", "may", "not", "we", "they", "their", "our", "you", "your", "its",
+        }
         
-    def format_for_training(self, 
-                           extracted_data: List[Dict], 
+    def format_for_training(self,
+                           extracted_data: List[Dict],
                            output_format: str = 'alpaca') -> List[Dict]:
         """
         Format extracted PDF data for training
@@ -92,18 +107,19 @@ class DataFormatter:
                 'quality': doc_data.get('extraction_quality', 'unknown')
             }
             
-            # Process the text
+            # Process the text or provided chunks
             text = doc_data.get('text', '')
-            if not text:
+            chunks = doc_data.get('chunks')
+            if not text and not chunks:
                 continue
                 
             # Create training examples from the text
             if output_format == 'alpaca':
-                examples = self._format_alpaca_style(text, doc_metadata)
+                examples = self._format_alpaca_style(text, doc_metadata, chunks=chunks)
             elif output_format == 'chatML':
-                examples = self._format_chatml_style(text, doc_metadata)
+                examples = self._format_chatml_style(text, doc_metadata, chunks=chunks)
             else:  # raw
-                examples = self._format_raw_style(text, doc_metadata)
+                examples = self._format_raw_style(text, doc_metadata, chunks=chunks)
                 
             training_data.extend(examples)
             
@@ -119,7 +135,7 @@ class DataFormatter:
         
         return training_data
     
-    def _format_alpaca_style(self, text: str, metadata: Dict) -> List[Dict]:
+    def _format_alpaca_style(self, text: str, metadata: Dict, chunks: Optional[List[str]] = None) -> List[Dict]:
         """
         Format text in Alpaca/Stanford style
         
@@ -131,23 +147,33 @@ class DataFormatter:
         }
         """
         examples = []
-        chunks = self._create_text_chunks(text)
+        chunks = chunks or self._create_text_chunks(text)
         
         for i, chunk in enumerate(chunks):
-            # Create different types of training examples
-            
-            # 1. Context-based QA
-            if i < len(chunks) - 1:
-                example = {
-                    "instruction": "Based on the following context, answer questions accurately.",
-                    "input": f"Context: {chunk}\n\nWhat is this text about?",
-                    "output": self._generate_summary(chunk),
-                    "metadata": {**metadata, "chunk_index": i, "type": "qa"}
-                }
-                examples.append(example)
-            
-            # 2. Continuation
-            if len(chunk) > 200:
+            # 1. Summary
+            summary = self._generate_summary(chunk)
+            summary = self._ensure_non_redundant_output(chunk, summary)
+            example = {
+                "instruction": "Summarize the following text concisely.",
+                "input": chunk,
+                "output": summary,
+                "metadata": {**metadata, "chunk_index": i, "type": "summary"}
+            }
+            examples.append(example)
+
+            # 2. Key points extraction
+            key_points = self._generate_key_points(chunk)
+            key_points = self._ensure_non_redundant_output(chunk, key_points)
+            example = {
+                "instruction": "List the key points from the following text.",
+                "input": chunk,
+                "output": key_points,
+                "metadata": {**metadata, "chunk_index": i, "type": "key_points"}
+            }
+            examples.append(example)
+
+            # 3. Continuation (optional)
+            if self.include_continuation and len(chunk) > 200:
                 split_point = len(chunk) // 2
                 example = {
                     "instruction": "Continue the following text maintaining the same style and topic.",
@@ -160,17 +186,19 @@ class DataFormatter:
             # 3. Domain-specific instruction
             if self.domain_prompts:
                 for prompt_template in self.domain_prompts[:2]:  # Use up to 2 templates
+                    domain_output = self._generate_domain_response(chunk, prompt_template)
+                    domain_output = self._ensure_non_redundant_output(chunk, domain_output)
                     example = {
                         "instruction": prompt_template.get("instruction", "Analyze the following content."),
                         "input": chunk,
-                        "output": self._generate_domain_response(chunk, prompt_template),
+                        "output": domain_output,
                         "metadata": {**metadata, "chunk_index": i, "type": "domain"}
                     }
                     examples.append(example)
                     
         return examples
     
-    def _format_chatml_style(self, text: str, metadata: Dict) -> List[Dict]:
+    def _format_chatml_style(self, text: str, metadata: Dict, chunks: Optional[List[str]] = None) -> List[Dict]:
         """
         Format text in ChatML style
         
@@ -184,7 +212,7 @@ class DataFormatter:
         }
         """
         examples = []
-        chunks = self._create_text_chunks(text)
+        chunks = chunks or self._create_text_chunks(text)
         
         system_prompt = (
             "You are an AI assistant with expertise in the domain covered by this document. "
@@ -193,11 +221,13 @@ class DataFormatter:
         
         for i, chunk in enumerate(chunks):
             # Create conversation-style examples
+            explanation = self._generate_explanation(chunk)
+            explanation = self._ensure_non_redundant_output(chunk, explanation)
             example = {
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Explain the following content:\n\n{chunk[:500]}"},
-                    {"role": "assistant", "content": self._generate_explanation(chunk)}
+                    {"role": "assistant", "content": explanation}
                 ],
                 "metadata": {**metadata, "chunk_index": i}
             }
@@ -205,7 +235,7 @@ class DataFormatter:
             
         return examples
     
-    def _format_raw_style(self, text: str, metadata: Dict) -> List[Dict]:
+    def _format_raw_style(self, text: str, metadata: Dict, chunks: Optional[List[str]] = None) -> List[Dict]:
         """
         Format text in raw completion style
         
@@ -216,7 +246,7 @@ class DataFormatter:
         }
         """
         examples = []
-        chunks = self._create_text_chunks(text)
+        chunks = chunks or self._create_text_chunks(text)
         
         for i, chunk in enumerate(chunks):
             example = {
@@ -258,33 +288,38 @@ class DataFormatter:
                 
         return chunks
     
-    def _generate_summary(self, text: str, max_length: int = 200) -> str:
-        """Generate a simple summary (placeholder for more sophisticated summarization)"""
-        # For actual implementation, you might want to use a small model or heuristics
-        # This is a simple extractive approach
-        sentences = text.split('. ')[:3]
-        summary = '. '.join(sentences)
-        if len(summary) > max_length:
-            summary = summary[:max_length] + "..."
+    def _generate_summary(self, text: str) -> str:
+        """Generate a concise summary using simple heuristics."""
+        sentences = self._split_sentences(text)
+        if not sentences:
+            return self._generate_keyword_summary(text)
+
+        max_length = min(self.max_summary_length, max(50, int(len(text) * self.max_summary_ratio)))
+        summary_sentences = []
+        current_length = 0
+        for sentence in sentences:
+            if current_length + len(sentence) > max_length:
+                break
+            summary_sentences.append(sentence)
+            current_length += len(sentence)
+            if len(summary_sentences) >= 3:
+                break
+
+        summary = '. '.join(summary_sentences).strip()
+        if summary and not summary.endswith(('.', '!', '?')):
+            summary += '.'
+
+        if not summary:
+            summary = self._generate_keyword_summary(text)
+
         return summary
     
     def _generate_explanation(self, text: str) -> str:
-        """Generate an explanation of the text"""
-        # Simplified explanation generation
-        key_points = []
-        sentences = text.split('. ')
-        
-        # Extract key sentences (simple heuristic)
-        for sentence in sentences[:5]:
-            if len(sentence) > 20:
-                key_points.append(sentence.strip())
-                
-        if key_points:
-            explanation = "This text discusses: " + "; ".join(key_points[:3])
-        else:
-            explanation = "This text contains domain-specific information."
-            
-        return explanation
+        """Generate a compact explanation without copying full sentences."""
+        keywords = self._extract_keywords(text, limit=max(self.min_keyword_count, 5))
+        if keywords:
+            return "This text covers: " + ", ".join(keywords) + "."
+        return "This text contains domain-specific information."
     
     def _generate_domain_response(self, text: str, prompt_template: Dict) -> str:
         """Generate domain-specific response based on template"""
@@ -297,16 +332,66 @@ class DataFormatter:
         
         if response_type == "extraction":
             # Extract key terms and concepts
-            words = text.split()
-            # Simple heuristic: capitalized words might be important
-            key_terms = [w for w in words if w and w[0].isupper()][:10]
-            return f"Key concepts: {', '.join(set(key_terms))}"
+            key_terms = self._extract_keywords(text, limit=self.max_keyword_count)
+            if key_terms:
+                return f"Key concepts: {', '.join(key_terms)}"
+            return "Key concepts: (insufficient signal)"
             
         elif response_type == "analysis":
             return self._generate_explanation(text)
             
         else:
             return self._generate_summary(text)
+
+    def _split_sentences(self, text: str) -> List[str]:
+        """Split text into sentences for summarization."""
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        return [s.strip() for s in sentences if s.strip()]
+
+    def _extract_keywords(self, text: str, limit: int = 8) -> List[str]:
+        """Extract simple keyword list from text."""
+        tokens = re.findall(r"[A-Za-z0-9']+", text.lower())
+        filtered = [t for t in tokens if t not in self._stopwords and len(t) > 2]
+        if not filtered:
+            return []
+        counts = Counter(filtered)
+        keywords = [word for word, _ in counts.most_common(limit)]
+        return keywords
+
+    def _generate_keyword_summary(self, text: str) -> str:
+        """Generate a short key-topic summary."""
+        keywords = self._extract_keywords(text, limit=self.max_keyword_count)
+        if not keywords:
+            return "Key topics unavailable."
+        return "Key topics: " + ", ".join(keywords) + "."
+
+    def _generate_key_points(self, text: str) -> str:
+        """Generate key points from text without copying sentences."""
+        keywords = self._extract_keywords(text, limit=self.max_keyword_count)
+        if not keywords:
+            return "Key points unavailable."
+        return "Key points: " + "; ".join(keywords[: self.max_keyword_count]) + "."
+
+    def _ensure_non_redundant_output(self, input_text: str, output_text: str) -> str:
+        """Avoid outputs that closely mirror the input."""
+        if not input_text or not output_text:
+            return output_text
+
+        normalized_input = self._normalize_for_similarity(input_text)
+        normalized_output = self._normalize_for_similarity(output_text)
+        if not normalized_output:
+            return output_text
+
+        similarity = SequenceMatcher(None, normalized_input, normalized_output).ratio()
+        if similarity >= self.max_output_similarity or normalized_output in normalized_input:
+            return self._generate_keyword_summary(input_text)
+        return output_text
+
+    def _normalize_for_similarity(self, text: str) -> str:
+        """Normalize text for similarity checks."""
+        text = text.lower()
+        text = re.sub(r"[^a-z0-9\s]+", " ", text)
+        return " ".join(text.split())
     
     def _augment_training_data(self, training_data: List[Dict]) -> List[Dict]:
         """Apply data augmentation techniques"""

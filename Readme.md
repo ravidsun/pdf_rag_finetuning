@@ -9,6 +9,8 @@ A production-ready pipeline for processing domain-specific PDFs into training da
 - **Domain-specific text cleaning** with customizable rules
 - **Smart chunking** with overlap for context preservation
 - **JSONL formatting** compatible with Llama 3.1 training formats (Alpaca, ChatML, Raw)
+- **Output quality guards** to reduce input/output copying
+- **Special character normalization** and optional Sanskrit romanization (Devanagari -> ASCII)
 - **SQLite database** for persistent storage and deduplication
 - **Batch processing** with memory management
 - **Quality validation** and statistics reporting
@@ -82,8 +84,8 @@ pdf-llama-finetuning/
 Edit `config/settings.yaml` to customize:
 
 - **Extraction settings**: OCR, batch size, timeout
-- **Text cleaning**: Domain terms, minimum lengths
-- **Formatting**: Chunk size, overlap, output format
+- **Text cleaning**: Domain terms, minimum lengths, special character normalization, Sanskrit romanization
+- **Formatting**: Chunk size, overlap, output format, continuation examples, output similarity guard
 - **Database**: Path, backup settings
 - **Processing**: Quality thresholds, retry logic
 
@@ -98,6 +100,11 @@ All database artifacts are stored under the shared tools directory:
 Place PDFs to be processed in `C:\LLM\tools\pdf_rag_in_out\input`. Each processed PDF writes its JSONL outputs and stats to `C:\LLM\tools\pdf_rag_in_out\output\<PDF_NAME>\`, so multiple JSON artifacts for one document stay grouped together.
 
 ## 🚦 Quick Start
+
+### Run with the shared watch folders (Windows)
+```bash
+pwsh -File scripts/run_pipeline.ps1
+```
 
 ### Process a directory of PDFs
 ```bash
@@ -195,6 +202,11 @@ tail -f pdf_processing.log
 - Enable OCR: Set `use_ocr: true` in settings
 - Try different extraction methods
 - Check PDF encryption/permissions
+
+### Output repeats input
+- Ensure `formatting.include_continuation: false` (continuation examples can mirror input)
+- Tighten `formatting.max_output_similarity` (lower values are stricter)
+- Reprocess with `processing.skip_existing: false` if documents were already cached
 
 ## 📚 Best Practices
 

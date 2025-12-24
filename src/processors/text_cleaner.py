@@ -29,6 +29,9 @@ class TextCleaner:
         
         # Domain-specific terms to preserve (loaded from config)
         self.preserve_terms = set(self.config.get('preserve_terms', []))
+        self.normalize_special_chars = self.config.get('normalize_special_chars', True)
+        self.romanize_sanskrit = self.config.get('romanize_sanskrit', False)
+        self.romanization_scheme = self.config.get('romanization_scheme', 'ascii')
         
         # Common artifacts from PDF extraction
         self.pdf_artifacts = [
@@ -70,6 +73,10 @@ class TextCleaner:
         
         # Step 1: Normalize unicode and encoding
         text = self._normalize_unicode(text)
+
+        # Step 1b: Normalize special characters
+        if self.normalize_special_chars:
+            text = self._normalize_special_chars(text)
         
         # Step 2: Remove PDF-specific artifacts
         text = self._remove_pdf_artifacts(text)
@@ -91,6 +98,10 @@ class TextCleaner:
         
         # Step 8: Domain-specific cleaning
         text = self._domain_specific_cleaning(text)
+
+        # Step 8b: Romanize Sanskrit (Devanagari) if configured
+        if self.romanize_sanskrit:
+            text = self._romanize_sanskrit(text)
         
         # Step 9: Final validation
         text = self._validate_cleaned_text(text)
@@ -135,6 +146,38 @@ class TextCleaner:
                 text = re.sub(pattern, '', text, flags=re.MULTILINE)
                 
         return text
+
+    def _normalize_special_chars(self, text: str) -> str:
+        """Normalize special characters and ligatures to ASCII-friendly forms."""
+        replacements = {
+            '•': '-', '◦': '-', '▪': '-', '‣': '-', '·': '-',
+            '–': '-', '—': '--', '―': '--',
+            '“': '"', '”': '"', '„': '"', '‟': '"',
+            '‘': "'", '’': "'", '‚': "'", '‛': "'",
+            '…': '...',
+            'ﬁ': 'fi', 'ﬂ': 'fl', 'ﬃ': 'ffi', 'ﬄ': 'ffl', 'ﬀ': 'ff',
+            'ﬅ': 'ft', 'ﬆ': 'st',
+            '«': '"', '»': '"',
+            '©': '(c)', '®': '(r)', '™': '(tm)',
+            '✓': 'OK', '✔': 'OK', '✗': 'X', '×': 'x',
+            '§': 'section', '°': ' deg ',
+        }
+
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+
+        # Remove non-printable characters except newline
+        cleaned = []
+        for char in text:
+            if char == '\n':
+                cleaned.append(char)
+                continue
+            category = unicodedata.category(char)
+            if category in ('Cc', 'Cf', 'Cs', 'Co'):
+                continue
+            cleaned.append(char)
+
+        return ''.join(cleaned)
     
     def _fix_ocr_errors(self, text: str) -> str:
         """Fix common OCR recognition errors"""
@@ -249,6 +292,85 @@ class TextCleaner:
             text = re.sub(r'\\\[[^\]]+\\\]', '[EQUATION]', text)
             
         return text
+
+    def _romanize_sanskrit(self, text: str) -> str:
+        """Romanize Sanskrit Devanagari script using an ASCII scheme."""
+        if not re.search(r'[\u0900-\u097F]', text):
+            return text
+        scheme = (self.romanization_scheme or 'ascii').lower()
+        if scheme != 'ascii':
+            logger.warning("Unsupported romanization_scheme '%s', using ascii.", scheme)
+
+        vowels = {
+            'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ii', 'उ': 'u', 'ऊ': 'uu',
+            'ऋ': 'r', 'ॠ': 'rr', 'ऌ': 'l', 'ॡ': 'll',
+            'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au',
+            'ऑ': 'o', 'ऍ': 'e',
+        }
+        consonants = {
+            'क': 'k', 'ख': 'kh', 'ग': 'g', 'घ': 'gh', 'ङ': 'ng',
+            'च': 'c', 'छ': 'ch', 'ज': 'j', 'झ': 'jh', 'ञ': 'ny',
+            'ट': 't', 'ठ': 'th', 'ड': 'd', 'ढ': 'dh', 'ण': 'n',
+            'त': 't', 'थ': 'th', 'द': 'd', 'ध': 'dh', 'न': 'n',
+            'प': 'p', 'फ': 'ph', 'ब': 'b', 'भ': 'bh', 'म': 'm',
+            'य': 'y', 'र': 'r', 'ल': 'l', 'व': 'v',
+            'श': 'sh', 'ष': 'sh', 'स': 's', 'ह': 'h',
+            'ळ': 'l',
+            'क़': 'q', 'ख़': 'kh', 'ग़': 'gh', 'ज़': 'z', 'ड़': 'd', 'ढ़': 'dh', 'फ़': 'f', 'य़': 'y',
+        }
+        matras = {
+            'ा': 'aa', 'ि': 'i', 'ी': 'ii', 'ु': 'u', 'ू': 'uu',
+            'ृ': 'r', 'ॄ': 'rr', 'ॢ': 'l', 'ॣ': 'll',
+            'े': 'e', 'ै': 'ai', 'ो': 'o', 'ौ': 'au',
+        }
+        signs = {
+            'ं': 'm', 'ँ': 'n', 'ः': 'h', 'ऽ': "'",
+            '।': '.', '॥': '.',
+        }
+        digits = {
+            '०': '0', '१': '1', '२': '2', '३': '3', '४': '4',
+            '५': '5', '६': '6', '७': '7', '८': '8', '९': '9',
+        }
+        virama = '्'
+
+        output = []
+        i = 0
+        while i < len(text):
+            ch = text[i]
+            if ch in consonants:
+                base = consonants[ch]
+                next_ch = text[i + 1] if i + 1 < len(text) else ''
+                if next_ch in matras:
+                    output.append(base + matras[next_ch])
+                    i += 2
+                    continue
+                if next_ch == virama:
+                    output.append(base)
+                    i += 2
+                    continue
+                output.append(base + 'a')
+                i += 1
+                continue
+            if ch in vowels:
+                output.append(vowels[ch])
+                i += 1
+                continue
+            if ch in matras:
+                output.append(matras[ch])
+                i += 1
+                continue
+            if ch in signs:
+                output.append(signs[ch])
+                i += 1
+                continue
+            if ch in digits:
+                output.append(digits[ch])
+                i += 1
+                continue
+            output.append(ch)
+            i += 1
+
+        return ''.join(output)
     
     def _validate_cleaned_text(self, text: str) -> str:
         """Final validation and quality checks"""

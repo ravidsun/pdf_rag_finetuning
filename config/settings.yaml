@@ -47,6 +47,13 @@ cleaning:
   # Minimum text length for valid documents
   min_text_length: 50
 
+  # Normalize special characters to ASCII-friendly forms
+  normalize_special_chars: true
+
+  # Romanize Sanskrit (Devanagari) to ASCII
+  romanize_sanskrit: true
+  romanization_scheme: ascii
+
 # Data Formatting Settings
 formatting:
   # Maximum sequence length for training
@@ -66,6 +73,16 @@ formatting:
   
   # Include metadata in JSONL output
   include_metadata: false
+
+  # Include continuation-style examples (may mirror input text)
+  include_continuation: false
+
+  # Similarity guard to reduce input/output copying
+  max_output_similarity: 0.75
+  max_summary_ratio: 0.35
+  max_summary_length: 200
+  min_keyword_count: 4
+  max_keyword_count: 8
   
   # Output format (alpaca, chatML, raw)
   output_format: alpaca
