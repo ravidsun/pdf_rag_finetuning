@@ -41,6 +41,15 @@ class DataFormatter:
         self.max_summary_length = self.config.get('max_summary_length', 200)
         self.min_keyword_count = self.config.get('min_keyword_count', 4)
         self.max_keyword_count = self.config.get('max_keyword_count', 8)
+        self.qa_only = self.config.get('qa_only', False)
+        self.qa_per_chunk = self.config.get('qa_per_chunk', 2)
+        self.qa_templates = self.config.get('qa_templates', [
+            "What is the main topic of the text?",
+            "What does the text say about {keyword}?",
+            "Why is {keyword} important in this context?",
+            "How is {keyword} described or applied?",
+            "Who is involved or referenced in relation to {keyword}?"
+        ])
         
         # Instruction templates for different training styles
         self.instruction_templates = {
@@ -150,30 +159,42 @@ class DataFormatter:
         chunks = chunks or self._create_text_chunks(text)
         
         for i, chunk in enumerate(chunks):
-            # 1. Summary
-            summary = self._generate_summary(chunk)
-            summary = self._ensure_non_redundant_output(chunk, summary)
-            example = {
-                "instruction": "Summarize the following text concisely.",
-                "input": chunk,
-                "output": summary,
-                "metadata": {**metadata, "chunk_index": i, "type": "summary"}
-            }
-            examples.append(example)
+            qa_pairs = self._generate_qa_pairs(chunk, limit=self.qa_per_chunk)
+            for question, answer in qa_pairs:
+                answer = self._ensure_non_redundant_output(chunk, answer)
+                example = {
+                    "instruction": question,
+                    "input": chunk,
+                    "output": answer,
+                    "metadata": {**metadata, "chunk_index": i, "type": "qa"}
+                }
+                examples.append(example)
 
-            # 2. Key points extraction
-            key_points = self._generate_key_points(chunk)
-            key_points = self._ensure_non_redundant_output(chunk, key_points)
-            example = {
-                "instruction": "List the key points from the following text.",
-                "input": chunk,
-                "output": key_points,
-                "metadata": {**metadata, "chunk_index": i, "type": "key_points"}
-            }
-            examples.append(example)
+            if not self.qa_only:
+                # Summary
+                summary = self._generate_summary(chunk)
+                summary = self._ensure_non_redundant_output(chunk, summary)
+                example = {
+                    "instruction": "Summarize the following text concisely.",
+                    "input": chunk,
+                    "output": summary,
+                    "metadata": {**metadata, "chunk_index": i, "type": "summary"}
+                }
+                examples.append(example)
+
+                # Key points extraction
+                key_points = self._generate_key_points(chunk)
+                key_points = self._ensure_non_redundant_output(chunk, key_points)
+                example = {
+                    "instruction": "List the key points from the following text.",
+                    "input": chunk,
+                    "output": key_points,
+                    "metadata": {**metadata, "chunk_index": i, "type": "key_points"}
+                }
+                examples.append(example)
 
             # 3. Continuation (optional)
-            if self.include_continuation and len(chunk) > 200:
+            if not self.qa_only and self.include_continuation and len(chunk) > 200:
                 split_point = len(chunk) // 2
                 example = {
                     "instruction": "Continue the following text maintaining the same style and topic.",
@@ -371,6 +392,35 @@ class DataFormatter:
         if not keywords:
             return "Key points unavailable."
         return "Key points: " + "; ".join(keywords[: self.max_keyword_count]) + "."
+
+    def _generate_qa_pairs(self, text: str, limit: int = 2) -> List[Tuple[str, str]]:
+        """Generate QA pairs from a text chunk using templates."""
+        qa_pairs = []
+        keywords = self._extract_keywords(text, limit=max(self.min_keyword_count, limit + 2))
+        summary = self._generate_summary(text)
+
+        templates = list(self.qa_templates) if self.qa_templates else []
+        if not templates:
+            templates = ["What is the main topic of the text?"]
+
+        for template in templates:
+            if len(qa_pairs) >= limit:
+                break
+            if "{keyword}" in template:
+                if not keywords:
+                    continue
+                for kw in keywords:
+                    if len(qa_pairs) >= limit:
+                        break
+                    question = template.format(keyword=kw)
+                    answer = self._generate_key_points(text)
+                    qa_pairs.append((question, answer))
+            else:
+                question = template
+                answer = summary
+                qa_pairs.append((question, answer))
+
+        return qa_pairs[:max(1, limit)]
 
     def _ensure_non_redundant_output(self, input_text: str, output_text: str) -> str:
         """Avoid outputs that closely mirror the input."""

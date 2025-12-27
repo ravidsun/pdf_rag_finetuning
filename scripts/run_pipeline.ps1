@@ -5,7 +5,8 @@
 .DESCRIPTION
     Ensures the default input/output directories exist under
     C:\LLM\tools\pdf_rag_in_out and then invokes scripts/process_pdfs.py.
-    You can override directories, batch size, or run a single PDF via parameters.
+    Uses config/settings.yaml if present (unless overridden). You can override
+    directories, batch size, or run a single PDF via parameters.
 
 .EXAMPLE
     pwsh -File scripts/run_pipeline.ps1
@@ -51,6 +52,13 @@ Push-Location $repoRoot
 
 try {
     $arguments = @("scripts/process_pdfs.py", "--input-dir", $InputDir, "--output-dir", $OutputDir)
+
+    if (-not $Config) {
+        $defaultConfig = Join-Path $repoRoot "config\settings.yaml"
+        if (Test-Path $defaultConfig) {
+            $Config = $defaultConfig
+        }
+    }
 
     if ($BatchSize) {
         $arguments += @("--batch-size", $BatchSize)

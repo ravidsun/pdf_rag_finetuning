@@ -100,14 +100,23 @@ class PDFProcessor:
                     'max_summary_length': 200,
                     'min_keyword_count': 4,
                     'max_keyword_count': 8,
-                    'output_format': 'alpaca'
+                    'output_format': 'alpaca',
+                    'qa_only': True,
+                    'qa_per_chunk': 2,
+                    'qa_templates': [
+                        "What is the main topic of the text?",
+                        "What does the text say about {keyword}?",
+                        "Why is {keyword} important in this context?",
+                        "How is {keyword} described or applied?",
+                        "Who is involved or referenced in relation to {keyword}?"
+                    ]
                 },
                 'database': {
                     'path': None  # Will use default
                 },
                 'processing': {
                     'batch_size': 5,
-                    'skip_existing': True,
+                    'skip_existing': False,
                     'quality_threshold': 'medium'
                 }
             }
@@ -228,14 +237,28 @@ class PDFProcessor:
                 return result
             
             # Check if already processed
-            if self.config['processing']['skip_existing']:
-                if self.db.document_exists(extraction_result['file_hash']):
-                    logger.info(f"Document already processed: {Path(pdf_path).name}")
-                    result['success'] = True
-                    return result
+            doc_exists = self.db.document_exists(extraction_result['file_hash'])
+            if self.config['processing']['skip_existing'] and doc_exists:
+                logger.info(f"Document already processed: {Path(pdf_path).name}")
+                doc_id = self.db.get_document_id(extraction_result['file_hash'])
+                if doc_id and output_dir:
+                    cached_training_data = self.db.get_training_data_for_document(doc_id)
+                    if cached_training_data:
+                        self._save_training_data(
+                            cached_training_data,
+                            Path(output_dir),
+                            pdf_name=Path(pdf_path).stem,
+                        )
+                        result['training_data'] = cached_training_data
+                    else:
+                        logger.warning("No cached training data found for %s", Path(pdf_path).name)
+                result['success'] = True
+                return result
             
             # Step 2: Insert document into database
             doc_id = self.db.insert_document(extraction_result)
+            if doc_exists and not self.config['processing']['skip_existing']:
+                self.db.reset_document_data(doc_id)
             
             # Step 3: Clean text
             logger.info(f"Cleaning extracted text...")

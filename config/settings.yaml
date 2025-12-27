@@ -86,6 +86,16 @@ formatting:
   
   # Output format (alpaca, chatML, raw)
   output_format: alpaca
+
+  # QA-only generation (set true for question/answer format)
+  qa_only: true
+  qa_per_chunk: 2
+  qa_templates:
+    - "What is the main topic of the text?"
+    - "What does the text say about {keyword}?"
+    - "Why is {keyword} important in this context?"
+    - "How is {keyword} described or applied?"
+    - "Who is involved or referenced in relation to {keyword}?"
   
   # Domain-specific prompts for training
   domain_prompts:
@@ -113,7 +123,7 @@ processing:
   batch_size: 5
   
   # Skip PDFs that have already been processed
-  skip_existing: true
+  skip_existing: false
   
   # Quality threshold (high, medium, poor)
   quality_threshold: medium

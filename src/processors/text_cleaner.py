@@ -28,7 +28,8 @@ class TextCleaner:
         self.config = config or {}
         
         # Domain-specific terms to preserve (loaded from config)
-        self.preserve_terms = set(self.config.get('preserve_terms', []))
+        preserve_terms = self.config.get('preserve_terms') or []
+        self.preserve_terms = set(preserve_terms)
         self.normalize_special_chars = self.config.get('normalize_special_chars', True)
         self.romanize_sanskrit = self.config.get('romanize_sanskrit', False)
         self.romanization_scheme = self.config.get('romanization_scheme', 'ascii')

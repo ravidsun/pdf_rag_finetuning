@@ -134,6 +134,69 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT id FROM documents WHERE file_hash = ?", (file_hash,))
             return cursor.fetchone() is not None
+
+    def get_document_id(self, file_hash: str) -> Optional[int]:
+        """Get document ID for a given file hash."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM documents WHERE file_hash = ?", (file_hash,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+
+    def get_training_data_for_document(
+        self,
+        doc_id: int,
+        format_type: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict]:
+        """Retrieve training data examples for a specific document."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            query = "SELECT full_example FROM training_data WHERE document_id = ?"
+            params = [doc_id]
+
+            if format_type:
+                query += " AND format_type = ?"
+                params.append(format_type)
+
+            query += " ORDER BY id"
+
+            if limit:
+                query += " LIMIT ?"
+                params.append(limit)
+
+            cursor.execute(query, params)
+
+            examples = []
+            for row in cursor.fetchall():
+                try:
+                    example = json.loads(row[0])
+                    examples.append(example)
+                except json.JSONDecodeError:
+                    logger.warning("Failed to decode training example for document %s", doc_id)
+
+            return examples
+
+    def reset_document_data(self, doc_id: int) -> Tuple[int, int]:
+        """Remove existing chunks and training data for a document."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("DELETE FROM training_data WHERE document_id = ?", (doc_id,))
+            training_deleted = cursor.rowcount
+
+            cursor.execute("DELETE FROM text_chunks WHERE document_id = ?", (doc_id,))
+            chunks_deleted = cursor.rowcount
+
+            conn.commit()
+
+        logger.info(
+            "Reset document data for %s (deleted %s training examples, %s chunks)",
+            doc_id,
+            training_deleted,
+            chunks_deleted,
+        )
+        return training_deleted, chunks_deleted
     
     def insert_document(self, doc_data: Dict) -> int:
         """
