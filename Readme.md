@@ -15,26 +15,47 @@ Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs 
 
 ## Quick Start
 
+> **New System?** See [SETUP.md](SETUP.md) for complete installation guide.
+
 ### 1. Prerequisites
 
 - **Ollama installed**: https://ollama.ai
 - **qwen2.5:14b model** downloaded: `ollama pull qwen2.5:14b`
 - **Python dependencies** installed: `pip install -r requirements.txt`
 
-### 2. Start Processing
+### 2. Configure Paths (First Time)
 
-```bash
-cd c:\LLM\pdf_rag_finetuning
-python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen
+Edit [.env](.env) file and set your paths:
+
+```env
+# Where your PDF files are located
+INPUT_FOLDER=./input
+
+# Where generated JSONL files will be saved
+OUTPUT_FOLDER=./data/output_qwen
 ```
 
-### 3. Check Progress
+**Tip**: Use forward slashes `/` for paths on all platforms.
+
+### 3. Start Processing
+
+```bash
+# Using config file (reads .env automatically)
+python scripts/qa_generator.py --config config.yaml
+```
+
+Or use batch scripts on Windows:
+- **Fresh start**: Double-click [run_fresh.bat](run_fresh.bat)
+- **Resume**: Double-click [run.bat](run.bat)
+- **Check status**: Double-click [run_status.bat](run_status.bat)
+
+### 4. Check Progress
 
 ```bash
 python scripts/qa_generator.py --status -o data/output_qwen
 ```
 
-### 4. Stop and Resume
+### 5. Stop and Resume
 
 - **Stop**: Press `Ctrl+C`
 - **Resume**: Run the same command again (auto-resumes)
@@ -45,10 +66,13 @@ python scripts/qa_generator.py --status -o data/output_qwen
 
 | Document | Description |
 |----------|-------------|
+| [SETUP.md](SETUP.md) | **New system setup guide** |
+| [QUICK_START.md](.github/QUICK_START.md) | Quick start guide |
 | [COMMANDS.md](.github/COMMANDS.md) | Complete command reference |
 | [BATCH_PROCESSING_GUIDE.md](.github/BATCH_PROCESSING_GUIDE.md) | Detailed batch processing guide |
 | [FEATURES.md](.github/FEATURES.md) | Feature descriptions and technical details |
 | [TROUBLESHOOTING.md](.github/TROUBLESHOOTING.md) | Common issues and solutions |
+| [CONFIGURATION_GUIDE.md](.github/CONFIGURATION_GUIDE.md) | Configuration options |
 
 ---
 
@@ -57,7 +81,7 @@ python scripts/qa_generator.py --status -o data/output_qwen
 ```
 pdf_rag_finetuning/
 ├── scripts/
-│   └── qa_generator.py      # Main QA generation script
+│   └── qa_generator.py             # Main QA generation script
 ├── data/
 │   ├── output_qwen/                # Generated JSONL files
 │   │   ├── checkpoint.json         # Current checkpoint
@@ -68,13 +92,22 @@ pdf_rag_finetuning/
 ├── src/
 │   ├── extractors/                 # PDF extraction modules
 │   ├── processors/                 # Processing utilities
-│   └── utils/                      # Helper functions
-├── .github/
-│   ├── BATCH_PROCESSING_GUIDE.md   # Resumable processing guide
-│   ├── COMMANDS.md                 # Command reference
-│   ├── FEATURES.md                 # Feature documentation
-│   └── TROUBLESHOOTING.md          # Troubleshooting guide
-└── README.md                       # This file
+│   └── utils/                      # Helper functions (config_loader.py)
+├── .github/                        # Documentation
+│   ├── BATCH_PROCESSING_GUIDE.md
+│   ├── COMMANDS.md
+│   ├── CONFIGURATION_GUIDE.md
+│   ├── FEATURES.md
+│   ├── QUICK_START.md
+│   └── TROUBLESHOOTING.md
+├── .env                            # Environment variables (customize!)
+├── .env.example                    # Environment template
+├── config.yaml                     # Configuration file
+├── SETUP.md                        # New system setup guide
+├── README.md                       # This file
+├── run.bat                         # Windows: Resume processing
+├── run_fresh.bat                   # Windows: Fresh start
+└── run_status.bat                  # Windows: Check status
 ```
 
 ---
@@ -106,18 +139,23 @@ Each JSONL file contains entries like:
 ## Key Commands
 
 ```bash
-# Start batch processing
-python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen
+# Start/Resume processing (uses config.yaml and .env)
+python scripts/qa_generator.py --config config.yaml
 
 # Check status
 python scripts/qa_generator.py --status -o data/output_qwen
 
 # Generate 3x QA pairs per page
-python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen --qa-multiplier 3.0
+python scripts/qa_generator.py --config config.yaml --qa-multiplier 3.0
 
 # Start fresh (ignore checkpoints)
-python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen --no-resume
+python scripts/qa_generator.py --config config.yaml --no-resume
+
+# Override with command-line paths
+python scripts/qa_generator.py "C:/path/to/pdfs" -o data/output_qwen
 ```
+
+**Windows Users**: Use the batch scripts [run.bat](run.bat), [run_fresh.bat](run_fresh.bat), or [run_status.bat](run_status.bat)
 
 See [COMMANDS.md](.github/COMMANDS.md) for complete reference.
 

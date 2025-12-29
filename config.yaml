@@ -53,10 +53,13 @@ processing:
 
 paths:
   # Input folder containing PDFs
-  input_folder: "c:\\LLM\\tools\\pdf_rag_in_out\\input"
+  # IMPORTANT: Customize this in .env file (INPUT_FOLDER)
+  # Use relative paths (./input) or absolute paths
+  input_folder: "D:/MyProjects/data/input"
 
   # Output folder for generated JSONL files
-  output_folder: "data\\output_qwen"
+  # IMPORTANT: Customize this in .env file (OUTPUT_FOLDER)
+  output_folder: "D:/MyProjects/data/output"
 
   # Log file location
   log_file: "qa_generation.log"
