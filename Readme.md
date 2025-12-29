@@ -1,6 +1,6 @@
 # PDF RAG Fine-tuning - Jyotish QA Dataset Generator
 
-Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs using **qwen2.5:14b** via Ollama.
+Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs using **qwen2.5:32b** via Ollama.
 
 ## Features
 
@@ -19,8 +19,8 @@ Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs 
 
 ### 1. Prerequisites
 
-- **Ollama installed**: https://ollama.ai
-- **qwen2.5:14b model** downloaded: `ollama pull qwen2.5:14b`
+- **Ollama installed**: https://ollama.ai (see [INSTALL_OLLAMA.md](INSTALL_OLLAMA.md))
+- **qwen2.5:32b model** downloaded: `ollama pull qwen2.5:32b`
 - **Python dependencies** installed: `pip install -r requirements.txt`
 
 ### 2. Configure Paths (First Time)
