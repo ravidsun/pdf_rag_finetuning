@@ -7,7 +7,7 @@
 
 model:
   # Ollama model to use
-  name: "qwen2.5:32b"
+  name: "qwen2.5:14b"
 
   # Ollama server URL
   base_url: "http://localhost:11434"
