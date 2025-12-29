@@ -45,10 +45,10 @@ python scripts/qa_generator.py --status -o data/output_qwen
 
 | Document | Description |
 |----------|-------------|
-| [COMMANDS.md](COMMANDS.md) | Complete command reference |
-| [BATCH_PROCESSING_GUIDE.md](BATCH_PROCESSING_GUIDE.md) | Detailed batch processing guide |
-| [FEATURES.md](FEATURES.md) | Feature descriptions and technical details |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and solutions |
+| [COMMANDS.md](.github/COMMANDS.md) | Complete command reference |
+| [BATCH_PROCESSING_GUIDE.md](.github/BATCH_PROCESSING_GUIDE.md) | Detailed batch processing guide |
+| [FEATURES.md](.github/FEATURES.md) | Feature descriptions and technical details |
+| [TROUBLESHOOTING.md](.github/TROUBLESHOOTING.md) | Common issues and solutions |
 
 ---
 
@@ -69,10 +69,11 @@ pdf_rag_finetuning/
 │   ├── extractors/                 # PDF extraction modules
 │   ├── processors/                 # Processing utilities
 │   └── utils/                      # Helper functions
-├── BATCH_PROCESSING_GUIDE.md       # Resumable processing guide
-├── COMMANDS.md                     # Command reference
-├── FEATURES.md                     # Feature documentation
-├── TROUBLESHOOTING.md              # Troubleshooting guide
+├── .github/
+│   ├── BATCH_PROCESSING_GUIDE.md   # Resumable processing guide
+│   ├── COMMANDS.md                 # Command reference
+│   ├── FEATURES.md                 # Feature documentation
+│   └── TROUBLESHOOTING.md          # Troubleshooting guide
 └── README.md                       # This file
 ```
 
@@ -118,7 +119,7 @@ python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/outpu
 python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen --no-resume
 ```
 
-See [COMMANDS.md](COMMANDS.md) for complete reference.
+See [COMMANDS.md](.github/COMMANDS.md) for complete reference.
 
 ---
 
@@ -137,8 +138,8 @@ For **34 Jyotish PDFs** (~5,000-7,000 total pages):
 ## Support
 
 For issues or questions:
-1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-2. Review [BATCH_PROCESSING_GUIDE.md](BATCH_PROCESSING_GUIDE.md)
+1. Check [TROUBLESHOOTING.md](.github/TROUBLESHOOTING.md)
+2. Review [BATCH_PROCESSING_GUIDE.md](.github/BATCH_PROCESSING_GUIDE.md)
 3. Check logs: `qa_generation_ollama.log`
 
 ---
