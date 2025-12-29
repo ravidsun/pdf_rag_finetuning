@@ -1,0 +1,156 @@
+# QA Generator Configuration File
+# Edit this file to customize your QA generation settings
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+
+model:
+  # Ollama model to use
+  name: "qwen2.5:14b"
+
+  # Ollama server URL
+  base_url: "http://localhost:11434"
+
+  # Model temperature (0.0-1.0, lower = more focused)
+  temperature: 0.3
+
+  # Maximum tokens to generate
+  max_tokens: 4096
+
+# Alternative models (uncomment to use):
+# model:
+#   name: "llama3.1:8b"      # Faster, good quality
+#   name: "mistral"          # Fast, good quality
+#   name: "phi3"             # Very fast, good for testing
+#   name: "gemma2"           # Fast, very good quality
+
+# ============================================================================
+# PROCESSING CONFIGURATION
+# ============================================================================
+
+processing:
+  # Generate this many QA pairs per page (default: 2.0)
+  # Set to null to use fixed target_qa_count instead
+  qa_multiplier: 2.0
+
+  # Fixed number of QA pairs per book (overrides qa_multiplier if set)
+  # Set to null to use qa_multiplier instead
+  target_qa_count: null
+
+  # Text chunk size in characters
+  chunk_size: 4000
+
+  # Overlap between chunks
+  chunk_overlap: 400
+
+  # Delay between LLM calls in seconds (rate limiting)
+  rate_limit_delay: 0.5
+
+# ============================================================================
+# PATHS CONFIGURATION
+# ============================================================================
+
+paths:
+  # Input folder containing PDFs
+  input_folder: "c:\\LLM\\tools\\pdf_rag_in_out\\input"
+
+  # Output folder for generated JSONL files
+  output_folder: "data\\output_qwen"
+
+  # Log file location
+  log_file: "qa_generation.log"
+
+# ============================================================================
+# RESUME/CHECKPOINT CONFIGURATION
+# ============================================================================
+
+resume:
+  # Enable automatic resume from checkpoint
+  enabled: true
+
+  # Checkpoint file name
+  checkpoint_file: "checkpoint.json"
+
+  # Progress file name
+  progress_file: "progress.json"
+
+# ============================================================================
+# SYSTEM PROMPT CONFIGURATION
+# ============================================================================
+
+# You can customize the system prompt used for QA generation
+# Supported placeholders: {domain}, {qa_types}, {difficulties}
+system_prompt: |
+  You are an expert in {domain} creating high-quality training data for fine-tuning language models.
+  Your task is to generate diverse, educational question-answer pairs from the provided text.
+
+  CRITICAL REQUIREMENTS:
+  1. Preserve ALL technical terms with their exact formatting
+  2. Include proper domain-specific terminology
+  3. Create self-contained, educational answers (2-4 sentences)
+  4. Extract actual evidence quotes from the source text
+  5. Mix difficulty levels and question types
+  6. Questions should be specific and educational, not generic
+
+  QA TYPES TO USE:
+  {qa_types}
+
+  OUTPUT FORMAT - Return ONLY a valid JSON array (no markdown, no code blocks):
+  [
+    {{
+      "question": "Clear, specific question about the content",
+      "answer": "Comprehensive, accurate answer with technical details (2-4 sentences)",
+      "qa_type": "one of the types listed above",
+      "difficulty": "easy|medium|hard",
+      "tags": ["relevant", "topic", "tags"],
+      "evidence": ["Exact quote from source supporting this QA"]
+    }}
+  ]
+
+  DIFFICULTY GUIDELINES:
+  - easy: Basic definitions, simple classifications, fundamental terms
+  - medium: Relationships between concepts, characteristics
+  - hard: Complex combinations, multi-factor analysis, advanced topics
+
+  Generate 3-6 high-quality QA pairs from the provided text. Focus on educational value and accuracy.
+
+# ============================================================================
+# DOMAIN CONFIGURATION
+# ============================================================================
+
+domain:
+  # Domain name for system prompt
+  name: "Jyotish (Vedic Astrology)"
+
+  # QA types to generate
+  qa_types:
+    - "definition"
+    - "concept"
+    - "rule"
+    - "procedure"
+    - "comparison"
+    - "example"
+    - "interpretation"
+    - "checklist"
+    - "common_mistake"
+
+  # Special instructions for this domain
+  special_instructions: "Preserve ALL Sanskrit terms with their exact diacritical marks (ā, ī, ū, ṛ, ṣ, ś, ñ, etc.)"
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log format
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+
+  # Enable file logging
+  file_enabled: true
+
+  # Enable console logging
+  console_enabled: true

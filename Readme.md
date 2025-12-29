@@ -1,244 +1,148 @@
-# PDF to Llama 3.1 Fine-tuning Pipeline
+# PDF RAG Fine-tuning - Jyotish QA Dataset Generator
 
-A production-ready pipeline for processing domain-specific PDFs into training data for Llama 3.1 fine-tuning using QLoRA on RunPod.
+Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs using **qwen2.5:14b** via Ollama.
 
-## 🚀 Features
+## Features
 
-- **Multi-method PDF extraction** with automatic fallback (PyMuPDF, pdfplumber, pdfminer, PyPDF2)
-- **OCR support** for scanned PDFs using Tesseract
-- **Domain-specific text cleaning** with customizable rules
-- **Smart chunking** with overlap for context preservation
-- **JSONL formatting** compatible with Llama 3.1 training formats (Alpaca, ChatML, Raw)
-- **Output quality guards** to reduce input/output copying
-- **Special character normalization** and optional Sanskrit romanization (Devanagari -> ASCII)
-- **SQLite database** for persistent storage and deduplication
-- **Batch processing** with memory management
-- **Quality validation** and statistics reporting
-- **Progress tracking** and comprehensive logging
+✅ **Automatic Resume** - Stop and resume anytime without losing progress
+✅ **2x QA Pairs Per Page** - Generates at least 2 QA pairs for every PDF page
+✅ **Checkpoint System** - Saves progress after each 50-page batch
+✅ **Incremental Saves** - JSONL files update continuously
+✅ **Progress Tracking** - Monitor status across sessions
+✅ **Graceful Interruption** - Press Ctrl+C to pause safely
 
-## 📋 Requirements
+---
 
-- Python 3.8+
-- 8GB+ RAM recommended
-- Optional: Tesseract for OCR support
+## Quick Start
 
-## 🛠️ Installation
+### 1. Prerequisites
 
-### 1. Clone the repository
+- **Ollama installed**: https://ollama.ai
+- **qwen2.5:14b model** downloaded: `ollama pull qwen2.5:14b`
+- **Python dependencies** installed: `pip install -r requirements.txt`
+
+### 2. Start Processing
+
 ```bash
-git clone https://github.com/yourusername/pdf-llama-finetuning.git
-cd pdf-llama-finetuning
+cd c:\LLM\pdf_rag_finetuning
+python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen
 ```
 
-### 2. Create virtual environment
+### 3. Check Progress
+
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python scripts/qa_generator.py --status -o data/output_qwen
 ```
 
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+### 4. Stop and Resume
 
-### 4. (Optional) Install Tesseract for OCR
-```bash
-# Ubuntu/Debian
-sudo apt-get install tesseract-ocr
+- **Stop**: Press `Ctrl+C`
+- **Resume**: Run the same command again (auto-resumes)
 
-# macOS
-brew install tesseract
+---
 
-# Windows
-# Download from: https://github.com/UB-Mannheim/tesseract/wiki
-```
+## Documentation
 
-### 5. Configure environment
-```bash
-cp .env.example .env
-# Edit .env with your settings
-```
+| Document | Description |
+|----------|-------------|
+| [COMMANDS.md](COMMANDS.md) | Complete command reference |
+| [BATCH_PROCESSING_GUIDE.md](BATCH_PROCESSING_GUIDE.md) | Detailed batch processing guide |
+| [FEATURES.md](FEATURES.md) | Feature descriptions and technical details |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and solutions |
 
-## 📁 Project Structure
+---
+
+## Project Structure
 
 ```
-pdf-llama-finetuning/
-├── config/
-│   └── settings.yaml          # Configuration settings
+pdf_rag_finetuning/
 ├── scripts/
-│   ├── process_pdfs.py        # Main processing script
-│   ├── validate_data.py       # Data validation
-│   └── export_training.py     # Export to JSONL
+│   └── qa_generator.py      # Main QA generation script
+├── data/
+│   ├── output_qwen/                # Generated JSONL files
+│   │   ├── checkpoint.json         # Current checkpoint
+│   │   ├── progress.json           # Overall progress
+│   │   ├── Book1_qa.jsonl         # Individual outputs
+│   │   └── all_books_combined_qa.jsonl
+│   └── training_sample.jsonl       # Sample data
 ├── src/
-│   ├── extractors/            # PDF extraction modules
-│   ├── processors/            # Text processing
-│   ├── database/              # Database management
-│   └── utils/                 # Utility functions
-├── requirements.txt           # Python dependencies
-├── .env.example              # Environment template
-└── README.md                 # Documentation
+│   ├── extractors/                 # PDF extraction modules
+│   ├── processors/                 # Processing utilities
+│   └── utils/                      # Helper functions
+├── BATCH_PROCESSING_GUIDE.md       # Resumable processing guide
+├── COMMANDS.md                     # Command reference
+├── FEATURES.md                     # Feature documentation
+├── TROUBLESHOOTING.md              # Troubleshooting guide
+└── README.md                       # This file
 ```
 
-## 🔧 Configuration
+---
 
-Edit `config/settings.yaml` to customize:
+## Output Format
 
-- **Extraction settings**: OCR, batch size, timeout
-- **Text cleaning**: Domain terms, minimum lengths, special character normalization, Sanskrit romanization
-- **Formatting**: Chunk size, overlap, output format, continuation examples, output similarity guard
-- **Database**: Path, backup settings
-- **Processing**: Quality thresholds, retry logic
+Each JSONL file contains entries like:
 
-## 📊 Database Storage
-
-All database artifacts are stored under the shared tools directory:
-- **Location**: `C:\LLM\tools\pdf_rag_db\processed_pdfs.db`
-- **Configurable**: Set `DATABASE_PATH` in `.env` or adjust `config/settings.yaml`
-
-## 📁 Input / Output Folders
-
-Place PDFs to be processed in `C:\LLM\tools\pdf_rag_in_out\input`. Each processed PDF writes its JSONL outputs and stats to `C:\LLM\tools\pdf_rag_in_out\output\<PDF_NAME>\`, so multiple JSON artifacts for one document stay grouped together.
-
-## 🚦 Quick Start
-
-### Run with the shared watch folders (Windows)
-```bash
-pwsh -File scripts/run_pipeline.ps1
-```
-
-### Process a directory of PDFs
-```bash
-python scripts/process_pdfs.py --input-dir /path/to/pdfs --batch-size 5
-```
-
-### Process a single PDF
-```bash
-python scripts/process_pdfs.py --single-pdf document.pdf
-```
-
-### Validate processed data
-```bash
-python scripts/validate_data.py output/training_data.jsonl
-```
-
-### Export training data
-```bash
-python scripts/export_training.py --output training_data.jsonl
-```
-
-### Export with train/validation split
-```bash
-python scripts/export_training.py --output data.jsonl --split-validation 0.1
-```
-
-## 📈 Workflow
-
-1. **Extract** - Multiple extraction methods with automatic fallback
-2. **Clean** - Domain-specific text preprocessing
-3. **Chunk** - Smart text segmentation with overlap
-4. **Format** - Convert to training format (Alpaca/ChatML)
-5. **Store** - Save to database with deduplication
-6. **Validate** - Quality checks and statistics
-7. **Export** - Generate JSONL for training
-
-## 🎯 Training Formats
-
-### Alpaca Format
 ```json
 {
-    "instruction": "Analyze the following text",
-    "input": "Document content here",
-    "output": "Expected response"
+  "id": "An_Introduction_to_Jyotish_p10_0_abc123",
+  "source": {
+    "pdf_name": "An_Introduction_to_Jyotish_..._nodrm.pdf",
+    "page_start": 10,
+    "page_end": 12,
+    "section_title": "Introduction to Jyotisha"
+  },
+  "question": "What is Jyotisha according to Vedic tradition?",
+  "answer": "Jyotisha is the Science of Tracking Time using Astronomical Events...",
+  "qa_type": "definition",
+  "difficulty": "easy",
+  "tags": ["jyotisha", "vedanga", "fundamentals"],
+  "evidence": ["Jyotisha is the Science of Tracking Time..."]
 }
 ```
 
-### ChatML Format
-```json
-{
-    "messages": [
-        {"role": "system", "content": "You are an expert assistant"},
-        {"role": "user", "content": "Question about document"},
-        {"role": "assistant", "content": "Response"}
-    ]
-}
-```
+---
 
-## 🏃 RunPod Integration
+## Key Commands
 
-After processing your PDFs:
-
-1. **Upload JSONL** to RunPod storage
-2. **Launch instance** with RTX 4090
-3. **Install dependencies**:
 ```bash
-pip install transformers accelerate peft bitsandbytes
+# Start batch processing
+python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen
+
+# Check status
+python scripts/qa_generator.py --status -o data/output_qwen
+
+# Generate 3x QA pairs per page
+python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen --qa-multiplier 3.0
+
+# Start fresh (ignore checkpoints)
+python scripts/qa_generator.py "c:\LLM\tools\pdf_rag_in_out\input" -o data/output_qwen --no-resume
 ```
 
-4. **Start fine-tuning** with your processed data
+See [COMMANDS.md](COMMANDS.md) for complete reference.
 
-## 📊 Monitoring
+---
 
-### Check database statistics
-```bash
-python scripts/process_pdfs.py --db-stats
-```
+## Expected Timeline
 
-### View processing logs
-```bash
-tail -f pdf_processing.log
-```
+For **34 Jyotish PDFs** (~5,000-7,000 total pages):
 
-## 🐛 Troubleshooting
+| QA Multiplier | Total QA Pairs | Est. Time |
+|---------------|----------------|-----------|
+| 2.0x (default) | ~10,000-14,000 | 5-7 days |
+| 3.0x | ~15,000-21,000 | 7-10 days |
+| 1.5x | ~7,500-10,500 | 4-5 days |
 
-### OCR not working
-- Install Tesseract: `sudo apt-get install tesseract-ocr`
-- Set path in `.env`: `TESSERACT_PATH=/usr/bin/tesseract`
+---
 
-### Memory errors
-- Reduce batch size in `config/settings.yaml`
-- Process larger PDFs individually
-
-### Poor extraction quality
-- Enable OCR: Set `use_ocr: true` in settings
-- Try different extraction methods
-- Check PDF encryption/permissions
-
-### Output repeats input
-- Ensure `formatting.include_continuation: false` (continuation examples can mirror input)
-- Tighten `formatting.max_output_similarity` (lower values are stricter)
-- Reprocess with `processing.skip_existing: false` if documents were already cached
-
-## 📚 Best Practices
-
-1. **Start small** - Process 3-5 PDFs first
-2. **Review quality** - Check extracted text samples
-3. **Adjust settings** - Tune for your domain
-4. **Monitor progress** - Watch logs for issues
-5. **Validate data** - Run validation before training
-6. **Backup database** - Regular backups recommended
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new features
-4. Submit a pull request
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Anthropic Claude for AI assistance
-- PyMuPDF, pdfplumber teams for excellent libraries
-- RunPod for GPU infrastructure
-- Meta for Llama models
-
-## 📧 Support
+## Support
 
 For issues or questions:
-- Open a GitHub issue
-- Check BEST_PRACTICES.md for domain-specific guidance
-- Review logs for debugging information
+1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+2. Review [BATCH_PROCESSING_GUIDE.md](BATCH_PROCESSING_GUIDE.md)
+3. Check logs: `qa_generation_ollama.log`
+
+---
+
+## License
+
+This project is for educational and research purposes.
