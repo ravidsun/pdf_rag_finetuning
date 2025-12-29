@@ -36,15 +36,15 @@ function Resolve-Python {
     return "python"
 }
 
-function Ensure-Directory {
+function New-DirectoryIfMissing {
     param([string]$PathToEnsure)
     if (-not (Test-Path $PathToEnsure)) {
         New-Item -ItemType Directory -Path $PathToEnsure -Force | Out-Null
     }
 }
 
-Ensure-Directory -PathToEnsure $InputDir
-Ensure-Directory -PathToEnsure $OutputDir
+New-DirectoryIfMissing -PathToEnsure $InputDir
+New-DirectoryIfMissing -PathToEnsure $OutputDir
 
 $pythonPath = Resolve-Python -Candidate $PythonExe
 $repoRoot = Resolve-Path "$PSScriptRoot\.."
