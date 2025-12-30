@@ -6,24 +6,27 @@
 # ============================================================================
 
 model:
-  # Ollama model to use
-  name: "qwen2.5:14b"
+  # Ollama model to use - Qwen2.5:72B for highest quality
+  name: "qwen2.5:72b"
 
   # Ollama server URL
   base_url: "http://localhost:11434"
 
   # Model temperature (0.0-1.0, lower = more focused)
-  temperature: 0.3
+  # Lower temperature for more consistent, factual QA generation
+  temperature: 0.2
 
   # Maximum tokens to generate
   max_tokens: 4096
 
 # Alternative models (uncomment to use):
 # model:
+#   name: "llama3.1:70b"     # Excellent alternative, Meta's flagship
+#   name: "qwen2.5:32b"      # Good balance for RTX 4090 (24GB VRAM)
+#   name: "mixtral:8x7b"     # Fast MoE model, very capable
+#   name: "qwen2.5:14b"      # Original (faster, lower quality)
 #   name: "llama3.1:8b"      # Faster, good quality
 #   name: "mistral"          # Fast, good quality
-#   name: "phi3"             # Very fast, good for testing
-#   name: "gemma2"           # Fast, very good quality
 
 # ============================================================================
 # PROCESSING CONFIGURATION
@@ -31,21 +34,24 @@ model:
 
 processing:
   # Generate this many QA pairs per page (default: 2.0)
-  # Set to null to use fixed target_qa_count instead
-  qa_multiplier: 2.0
+  # Increased to 4.0 for 2x more questions with 72B model
+  qa_multiplier: 4.0
 
   # Fixed number of QA pairs per book (overrides qa_multiplier if set)
   # Set to null to use qa_multiplier instead
   target_qa_count: null
 
   # Text chunk size in characters
-  chunk_size: 4000
+  # Reduced to 3000 for more chunks and better context focus
+  chunk_size: 3000
 
   # Overlap between chunks
-  chunk_overlap: 400
+  # Increased overlap to ensure continuity between chunks
+  chunk_overlap: 600
 
   # Delay between LLM calls in seconds (rate limiting)
-  rate_limit_delay: 0.5
+  # Reduced for GPU processing - adjust if hitting rate limits
+  rate_limit_delay: 0.3
 
 # ============================================================================
 # PATHS CONFIGURATION
@@ -116,7 +122,7 @@ system_prompt: |
   - medium: Relationships between concepts, characteristics
   - hard: Complex combinations, multi-factor analysis, advanced topics
 
-  Generate 3-6 high-quality QA pairs from the provided text. Focus on educational value and accuracy.
+  Generate 6-10 high-quality QA pairs from the provided text. Focus on educational value, accuracy, and diversity of question types.
 
 # ============================================================================
 # DOMAIN CONFIGURATION

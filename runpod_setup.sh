@@ -17,8 +17,9 @@ NC='\033[0m' # No Color
 
 # Configuration
 WORKSPACE_DIR="/workspace/pdf_rag_finetuning"
-MODEL_NAME="${MODEL_NAME:-qwen2.5:14b}"
-QA_MULTIPLIER="${QA_MULTIPLIER:-2.0}"
+MODEL_NAME="${MODEL_NAME:-qwen2.5:72b}"
+QA_MULTIPLIER="${QA_MULTIPLIER:-4.0}"
+CHUNK_SIZE="${CHUNK_SIZE:-3000}"
 
 # Function to print colored messages
 print_success() {
@@ -130,19 +131,23 @@ model:
 
 processing:
   # Generate this many QA pairs per page (default: 2.0)
+  # Increased for higher quality model
   qa_multiplier: $QA_MULTIPLIER
 
   # Fixed number of QA pairs per book (overrides qa_multiplier if set)
   target_qa_count: null
 
   # Text chunk size in characters
-  chunk_size: 4000
+  # Optimized for better context focus
+  chunk_size: $CHUNK_SIZE
 
   # Overlap between chunks
-  chunk_overlap: 400
+  # Increased for better continuity
+  chunk_overlap: 600
 
   # Delay between LLM calls in seconds (rate limiting)
-  rate_limit_delay: 0.5
+  # Reduced for GPU processing
+  rate_limit_delay: 0.3
 
 # ============================================================================
 # PATHS CONFIGURATION
@@ -208,7 +213,7 @@ system_prompt: |
   - medium: Relationships between concepts, characteristics
   - hard: Complex combinations, multi-factor analysis, advanced topics
 
-  Generate 3-6 high-quality QA pairs from the provided text. Focus on educational value and accuracy.
+  Generate 6-10 high-quality QA pairs from the provided text. Focus on educational value, accuracy, and diversity of question types.
 
 # ============================================================================
 # DOMAIN CONFIGURATION
@@ -292,8 +297,26 @@ echo ""
 echo "5. Download results when complete:"
 echo "   scp root@runpod-ip:$WORKSPACE_DIR/data/output/*.jsonl /local/path/"
 echo ""
-echo "GPU Performance Estimate:"
-echo "  - Expected speed: ~0.3-0.7 min/chunk (5-10x faster than CPU)"
-echo "  - Estimated time for 300 chunks: ~1.5-3.5 hours"
+echo "GPU Performance Estimate (for $MODEL_NAME):"
+if [[ "$MODEL_NAME" == *"72b"* ]] || [[ "$MODEL_NAME" == *"70b"* ]]; then
+    echo "  ⚠️  Large model detected - requires A100 (40GB+) or H100"
+    echo "  - Expected speed: ~1-2 min/chunk on A100"
+    echo "  - Estimated time for 400 chunks: ~7-13 hours"
+    echo "  - GPU: NVIDIA A100 (40GB/80GB) or H100 recommended"
+elif [[ "$MODEL_NAME" == *"32b"* ]]; then
+    echo "  - Expected speed: ~0.5-1 min/chunk on RTX 4090"
+    echo "  - Estimated time for 400 chunks: ~3-7 hours"
+    echo "  - GPU: RTX 4090 (24GB) or A40/L40 (48GB)"
+else
+    echo "  - Expected speed: ~0.3-0.7 min/chunk on RTX 4090"
+    echo "  - Estimated time for 400 chunks: ~2-5 hours"
+    echo "  - GPU: RTX 4090, RTX 3090, or better"
+fi
+echo ""
+echo "Quality Boost with Larger Models:"
+echo "  - More accurate Sanskrit preservation"
+echo "  - Better reasoning and concept understanding"
+echo "  - More diverse and educational question types"
+echo "  - Higher quality answers (2-4 sentences)"
 echo ""
 echo "============================================================"
