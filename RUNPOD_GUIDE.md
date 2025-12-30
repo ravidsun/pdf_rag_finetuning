@@ -74,21 +74,21 @@ chmod +x runpod_setup.sh
 The script will automatically:
 - Install Ollama and start the service
 - Install all Python dependencies
-- Download the qwen2.5:72b model (or your preferred model)
+- Download the qwen2.5:32b model (or your preferred model)
 - Configure paths for RunPod with optimal settings
 - Create data directories
 - Verify GPU availability
 
 **Alternative Models and Multipliers:**
 ```bash
-# Use Qwen2.5:32B with 2.0x multiplier (RECOMMENDED for 32 PDFs)
-MODEL_NAME=qwen2.5:32b QA_MULTIPLIER=2.0 ./runpod_setup.sh
+# Use default (Qwen2.5:32B with 2.0x - RECOMMENDED for 32 PDFs)
+./runpod_setup.sh
 
 # Use Qwen2.5:14B with 2.0x multiplier (Budget)
 MODEL_NAME=qwen2.5:14b QA_MULTIPLIER=2.0 ./runpod_setup.sh
 
-# Use default (Qwen2.5:72B with 4.0x - Highest Quality)
-./runpod_setup.sh
+# Use Qwen2.5:72B with 4.0x multiplier (Maximum Quality)
+MODEL_NAME=qwen2.5:72b QA_MULTIPLIER=4.0 ./runpod_setup.sh
 
 # Use Llama 3.1:70B
 MODEL_NAME=llama3.1:70b QA_MULTIPLIER=4.0 ./runpod_setup.sh
@@ -123,8 +123,8 @@ wget https://example.com/your-file.pdf
 cd /workspace/pdf_rag_finetuning
 python scripts/qa_generator.py data/input \
   -o data/output \
-  --model qwen2.5:72b \
-  --qa-multiplier 4.0
+  --model qwen2.5:32b \
+  --qa-multiplier 2.0
 ```
 
 **Option 2: Run in Background with Screen (recommended for long jobs)**
@@ -137,8 +137,8 @@ screen -S qa_gen
 # Run the generator with optimal settings
 python scripts/qa_generator.py data/input \
   -o data/output \
-  --model qwen2.5:72b \
-  --qa-multiplier 4.0
+  --model qwen2.5:32b \
+  --qa-multiplier 2.0
 
 # Detach from screen: Press Ctrl+A then D
 # Reattach anytime: screen -r qa_gen
@@ -227,22 +227,22 @@ MODEL_NAME=qwen2.5:7b QA_MULTIPLIER=1.5 ./runpod_setup.sh
 
 ## Advanced Usage
 
-### Using a Faster Model (qwen2.5:7b)
+### Using a Faster Model (qwen2.5:14b)
 
-For even faster processing with slightly lower quality:
+For faster processing with lower quality:
 
 ```bash
-# Download 7b model
-ollama pull qwen2.5:7b
+# Download 14b model
+ollama pull qwen2.5:14b
 
-# Run with 7b model
+# Run with 14b model
 python scripts/qa_generator.py data/input \
   -o data/output \
-  --model qwen2.5:7b \
+  --model qwen2.5:14b \
   --qa-multiplier 2.0
 ```
 
-Expected speedup: ~40% faster than 14b model
+Expected speedup: ~30-40% faster than 32b model
 
 ### Reduce QA Pairs for Faster Completion
 
@@ -250,7 +250,7 @@ Expected speedup: ~40% faster than 14b model
 # Generate 1.5x QA pairs instead of 2.0x
 python scripts/qa_generator.py data/input \
   -o data/output \
-  --model qwen2.5:14b \
+  --model qwen2.5:32b \
   --qa-multiplier 1.5
 ```
 
@@ -262,7 +262,7 @@ If your job gets interrupted, it will automatically resume from the checkpoint:
 # Just run the same command again
 python scripts/qa_generator.py data/input \
   -o data/output \
-  --model qwen2.5:14b \
+  --model qwen2.5:32b \
   --qa-multiplier 2.0
 ```
 
@@ -272,9 +272,9 @@ The script will detect the checkpoint and continue from where it left off.
 
 ### 1. Use Spot Instances (Recommended) ⭐
 
-**Spot A100 with qwen2.5:72b is the best value:**
-- Cost: $4.20-19.50 (vs $10.50-32.50 on-demand)
-- **Savings: 50-70%** ($6-13 saved)
+**Spot 2x A40 with qwen2.5:32b is the best value:**
+- Cost: $11-21 (vs $27-53 on-demand)
+- **Savings: 50-70%** ($16-32 saved)
 - Auto-resume from checkpoint if interrupted
 - Low risk during off-peak hours (2am-8am EST, weekends)
 
@@ -292,7 +292,7 @@ See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for full analysis.
 
 ### 2. Other Cost-Saving Tips
 - **Auto-shutdown**: Set up auto-stop in RunPod settings when job completes
-- **Right-size GPU**: Match GPU to model size (A100 for 72b, RTX 4090 for 32b)
+- **Right-size GPU**: Match GPU to model size (2x A40 for 32b, RTX 4090 for 14b)
 - **Monitor usage**: Stop the pod immediately when job completes
 - **Off-peak hours**: Deploy during low-demand times for best Spot availability
 
@@ -309,8 +309,8 @@ sleep 5
 ### Out of Memory Error
 ```bash
 # Use a smaller model
-ollama pull qwen2.5:7b
-python scripts/qa_generator.py data/input -o data/output --model qwen2.5:7b --qa-multiplier 2.0
+ollama pull qwen2.5:14b
+python scripts/qa_generator.py data/input -o data/output --model qwen2.5:14b --qa-multiplier 2.0
 ```
 
 ### GPU Not Being Used

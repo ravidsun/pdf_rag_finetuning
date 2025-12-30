@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 WORKSPACE_DIR="/workspace/pdf_rag_finetuning"
-MODEL_NAME="${MODEL_NAME:-qwen2.5:72b}"
-QA_MULTIPLIER="${QA_MULTIPLIER:-4.0}"
+MODEL_NAME="${MODEL_NAME:-qwen2.5:32b}"
+QA_MULTIPLIER="${QA_MULTIPLIER:-2.0}"
 CHUNK_SIZE="${CHUNK_SIZE:-3000}"
 
 # Function to print colored messages

@@ -21,7 +21,7 @@ print_info() { echo -e "${YELLOW}ℹ $1${NC}"; }
 
 # Configuration
 WORKSPACE_DIR="/workspace/pdf_rag_finetuning"
-MODEL_NAME="${MODEL_NAME:-qwen2.5:14b}"
+MODEL_NAME="${MODEL_NAME:-qwen2.5:32b}"
 QA_MULTIPLIER="${QA_MULTIPLIER:-2.0}"
 BASE_PORT=11434
 
