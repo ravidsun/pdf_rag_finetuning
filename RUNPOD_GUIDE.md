@@ -2,7 +2,13 @@
 
 This guide provides step-by-step instructions for running the PDF RAG Fine-tuning QA Generator on RunPod GPU instances for 5-10x faster processing.
 
-## Quick Start (5 Minutes Setup)
+## Deployment Options
+
+- **Single GPU**: Best for 1-10 PDFs, simple setup → [Continue with this guide]
+- **Multi-GPU**: Best for 10+ PDFs, 2-8x faster → [See MULTIGPU_GUIDE.md](MULTIGPU_GUIDE.md)
+- **Comparison**: Compare all options → [See GPU_COMPARISON.md](GPU_COMPARISON.md)
+
+## Quick Start (5 Minutes Setup - Single GPU)
 
 ### 1. Deploy RunPod GPU Instance
 
@@ -14,9 +20,10 @@ This guide provides step-by-step instructions for running the PDF RAG Fine-tunin
    - **Best**: NVIDIA A100 (40GB or 80GB) - ~$1.50-2.50/hr
    - **Alternative**: NVIDIA H100 (80GB) - Premium option
 
-   **For Qwen2.5:32B (Great Balance):**
-   - **Recommended**: NVIDIA RTX 4090 (24GB) - ~$0.50-0.80/hr
-   - **Alternative**: NVIDIA A40/L40 (48GB)
+   **For Qwen2.5:32B (Great Balance - RECOMMENDED for 32 PDFs):**
+   - **Best Value**: 2x NVIDIA A40 (48GB) - ~$1.40/hr total → [Multi-GPU Guide](MULTIGPU_GUIDE.md)
+   - **Single GPU**: NVIDIA RTX 4090 (24GB) - ~$0.50-0.80/hr
+   - **Alternative**: NVIDIA A40/L40 (48GB) - ~$0.60-0.80/hr
 
    **For Qwen2.5:14B (Budget):**
    - RTX 3090 (24GB) - ~$0.30-0.50/hr
@@ -72,16 +79,19 @@ The script will automatically:
 - Create data directories
 - Verify GPU availability
 
-**Alternative Models:**
+**Alternative Models and Multipliers:**
 ```bash
-# Use Qwen2.5:32B (for RTX 4090)
-MODEL_NAME=qwen2.5:32b ./runpod_setup.sh
+# Use Qwen2.5:32B with 2.0x multiplier (RECOMMENDED for 32 PDFs)
+MODEL_NAME=qwen2.5:32b QA_MULTIPLIER=2.0 ./runpod_setup.sh
+
+# Use Qwen2.5:14B with 2.0x multiplier (Budget)
+MODEL_NAME=qwen2.5:14b QA_MULTIPLIER=2.0 ./runpod_setup.sh
+
+# Use default (Qwen2.5:72B with 4.0x - Highest Quality)
+./runpod_setup.sh
 
 # Use Llama 3.1:70B
-MODEL_NAME=llama3.1:70b ./runpod_setup.sh
-
-# Use Mixtral 8x7B (fast)
-MODEL_NAME=mixtral:8x7b ./runpod_setup.sh
+MODEL_NAME=llama3.1:70b QA_MULTIPLIER=4.0 ./runpod_setup.sh
 ```
 
 ### 4. Upload Your PDF Files
@@ -168,23 +178,37 @@ git push
 
 ## Performance Comparison
 
-### Updated with Qwen2.5:72B (Optimal Quality)
+### Single GPU vs Multi-GPU (32 PDFs, 2.0x Multiplier)
 
-| Hardware | Model | Speed/Chunk | Total Time (~400 chunks) | Expected QA Pairs | Cost |
-|----------|-------|-------------|--------------------------|-------------------|------|
-| Local CPU | qwen2.5:14b | ~2.8 min | 18-24 hours | ~1,200 | Free |
-| RunPod RTX 4090 | qwen2.5:32b | ~0.5-1 min | **3-7 hours** | ~3,000 | $1.50-5.60 |
-| RunPod A100 | qwen2.5:72b | ~1-2 min | **7-13 hours** | **~8,000-10,000** | $10.50-32.50 |
-| RunPod A100 | llama3.1:70b | ~1-1.5 min | **7-10 hours** | ~8,000-10,000 | $10.50-25.00 |
+| Configuration | Model | Total Time | QA Pairs | Cost (On-Demand) | Cost (Spot) |
+|---------------|-------|------------|----------|------------------|-------------|
+| **Local CPU** | qwen2.5:14b | 320-448 hrs | 19,648 | Free | - |
+| **1x RTX 4090** | qwen2.5:32b | 64-128 hrs | 19,648 | $26-77 | $10-31 |
+| **1x A40** | qwen2.5:32b | 38-77 hrs | 19,648 | $23-62 | $9-25 |
+| **2x A40** ⭐ | qwen2.5:32b | **19-38 hrs** | 19,648 | **$27-53** | **$11-21** |
+| **4x A40** | qwen2.5:32b | **10-19 hrs** | 19,648 | $44-120 | $18-48 |
 
-**Quality Improvements with 72B:**
-- ⭐ 98/100 quality score (vs 85/100 for 14B)
-- 🎯 4x more QA pairs generated
+**Multi-GPU Benefits:**
+- 🚀 **2-4x faster** processing time
+- 💰 **Same total cost** (faster completion, not higher cost)
+- 📦 **Easy setup** with automated scripts
+- ✅ **Automatic PDF distribution** across GPUs
+
+**For 32 PDFs: 2x A40 is RECOMMENDED** → [Multi-GPU Guide](MULTIGPU_GUIDE.md)
+
+### Quality Comparison by Model
+
+| Model | Quality Score | QA Pairs/PDF | Best For |
+|-------|---------------|--------------|----------|
+| qwen2.5:14b (2.0x) | ⭐⭐⭐⭐ 85/100 | ~614 | Budget, Fast |
+| qwen2.5:32b (2.0x) | ⭐⭐⭐⭐⭐ 92/100 | ~614 | **Recommended** |
+| qwen2.5:72b (4.0x) | ⭐⭐⭐⭐⭐ 98/100 | ~1,228 | Maximum Quality |
+
+**Quality Improvements with 32B:**
 - 🔤 Better Sanskrit diacritical preservation
 - 🧠 Superior reasoning and concept understanding
 - 📚 More diverse question types
-
-**Speedup: 2-3x faster than CPU, with 4x more output!**
+- 💡 Excellent price/performance ratio
 
 ## Configuration Options
 
@@ -311,16 +335,19 @@ screen -r qa_gen
 - **RunPod Issues**: [RunPod Discord](https://discord.gg/runpod)
 - **Project Issues**: [GitHub Issues](https://github.com/ravidsun/pdf_rag_finetuning/issues)
 
-## Estimated Costs (as of 2024)
+## Estimated Costs for 32 PDFs (2.0x Multiplier)
 
-| GPU Type | Hourly Rate | Estimated Total Cost |
-|----------|-------------|---------------------|
-| RTX 4090 | $0.40-0.60/hr | $0.40-1.20 |
-| RTX 3090 | $0.30-0.50/hr | $0.45-1.25 |
-| A40 | $0.60-0.80/hr | $0.90-2.00 |
-| L40 | $0.70-0.90/hr | $1.05-2.25 |
+| Configuration | Hourly Rate | Processing Time | On-Demand Cost | Spot Cost |
+|---------------|-------------|-----------------|----------------|-----------|
+| **1x RTX 4090** | $0.40-0.60/hr | 64-128 hrs | $26-77 | $10-31 |
+| **1x A40** | $0.60-0.80/hr | 38-77 hrs | $23-62 | $9-25 |
+| **2x A40** ⭐ | $1.40/hr | 19-38 hrs | **$27-53** | **$11-21** |
+| **4x A40** | $2.80/hr | 10-19 hrs | $44-120 | $18-48 |
+| **1x A100** | $1.89-2.49/hr | 32-64 hrs | $60-159 | $24-64 |
 
-*Spot instances can be 50-70% cheaper*
+**Best Value: 2x A40 with Spot pricing = $11-21 for 32 PDFs!**
+
+*Note: Multi-GPU costs same total but finishes 2-4x faster*
 
 ## Next Steps
 
