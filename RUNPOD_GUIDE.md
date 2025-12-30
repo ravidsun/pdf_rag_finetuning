@@ -23,7 +23,13 @@ This guide provides step-by-step instructions for running the PDF RAG Fine-tunin
 
 4. Select template: **"RunPod Pytorch"** or **"RunPod Ubuntu"**
 5. Set disk space: **100GB minimum** (models are large)
-6. Click **"Deploy On-Demand"** (or "Deploy Spot" for 50-70% savings)
+6. **Choose Instance Type:**
+   - **Spot** (Recommended): 50-70% cheaper, auto-resume if interrupted
+   - **On-Demand**: Guaranteed availability, no interruptions
+
+   💡 **Recommendation**: Use **Spot** and save $6-13! Your script auto-resumes from checkpoints.
+
+   See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for detailed comparison.
 
 ### 2. Connect to Your Pod
 
@@ -240,11 +246,31 @@ The script will detect the checkpoint and continue from where it left off.
 
 ## Cost Optimization Tips
 
-1. **Use Spot Instances**: 50-70% cheaper than on-demand, but can be interrupted
-2. **Auto-shutdown**: Set up auto-stop in RunPod settings when job completes
-3. **Right-size GPU**: RTX 4090 offers best price/performance for this workload
-4. **Monitor usage**: Stop the pod immediately when job completes
-5. **Use cheaper models**: qwen2.5:7b is faster and cheaper to run
+### 1. Use Spot Instances (Recommended) ⭐
+
+**Spot A100 with qwen2.5:72b is the best value:**
+- Cost: $4.20-19.50 (vs $10.50-32.50 on-demand)
+- **Savings: 50-70%** ($6-13 saved)
+- Auto-resume from checkpoint if interrupted
+- Low risk during off-peak hours (2am-8am EST, weekends)
+
+**When to use Spot:**
+- ✅ You can monitor the job periodically
+- ✅ Running during off-peak hours
+- ✅ Want to save $6-13 with minimal risk
+
+**When to use On-Demand:**
+- Critical deadline < 24 hours
+- Need guaranteed completion
+- Running during peak business hours
+
+See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for full analysis.
+
+### 2. Other Cost-Saving Tips
+- **Auto-shutdown**: Set up auto-stop in RunPod settings when job completes
+- **Right-size GPU**: Match GPU to model size (A100 for 72b, RTX 4090 for 32b)
+- **Monitor usage**: Stop the pod immediately when job completes
+- **Off-peak hours**: Deploy during low-demand times for best Spot availability
 
 ## Troubleshooting
 

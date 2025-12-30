@@ -72,6 +72,7 @@ Generate high-quality question-answer pairs from Jyotish (Vedic Astrology) PDFs 
 |----------|-------------|
 | **[RUNPOD_GUIDE.md](RUNPOD_GUIDE.md)** | Complete RunPod deployment guide |
 | **[MODEL_COMPARISON.md](MODEL_COMPARISON.md)** | Compare all available models |
+| **[SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md)** | Spot vs On-Demand cost analysis |
 | **[OPTIMAL_SETUP_SUMMARY.md](OPTIMAL_SETUP_SUMMARY.md)** | Configuration summary |
 | **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** | Quick commands & tips |
 | [config.yaml](config.yaml) | Main configuration file |
@@ -208,13 +209,22 @@ python scripts/qa_generator.py data/input -o data/output --model llama3.1:70b --
 
 ## 📈 Cost Breakdown
 
-| Model | Hardware | Time | QA Pairs | Total Cost | Cost/1000 QA |
-|-------|----------|------|----------|------------|--------------|
-| qwen2.5:72b | A100 | 7-13h | 8,000-10,000 | $10-32 | $1.31-4.06 |
-| qwen2.5:32b | RTX 4090 | 3-7h | 3,000 | $1.50-6 | $0.83-2.13 |
-| mixtral:8x7b | RTX 4090 | 2-5h | 2,500 | $1-5 | $0.67-1.60 |
+### Recommended: Spot A100 with qwen2.5:72b ⭐
 
-**Recommendation**: For production datasets, qwen2.5:72b on A100 offers best quality despite higher cost.
+| Instance Type | Model | Time | QA Pairs | Total Cost | Savings |
+|---------------|-------|------|----------|------------|---------|
+| **Spot A100** ⭐ | qwen2.5:72b | 7-13h | 8,000-10,000 | **$4-20** | **50-70%** |
+| On-Demand A100 | qwen2.5:72b | 7-13h | 8,000-10,000 | $10-32 | - |
+| Spot RTX 4090 | qwen2.5:32b | 3-7h | 3,000 | $1.50-6 | 50-70% |
+| On-Demand RTX 4090 | qwen2.5:32b | 3-7h | 3,000 | $3-11 | - |
+
+**Best Value**: Spot A100 with qwen2.5:72b
+- Save $6-13 vs on-demand
+- Auto-resume from checkpoint if interrupted
+- Same quality (98/100)
+- Low risk during off-peak hours
+
+See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for detailed analysis.
 
 ---
 
