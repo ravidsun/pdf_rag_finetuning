@@ -75,11 +75,11 @@ The script will automatically:
 
 **Model Selection:**
 ```bash
+# Use default (qwen2.5:32b with 2.0x multiplier)
+./runpod_setup.sh
+
 # Use Qwen2.5:72B with 4.0x multiplier (RECOMMENDED for A100)
 MODEL_NAME=qwen2.5:72b QA_MULTIPLIER=4.0 ./runpod_setup.sh
-
-# Use Qwen2.5:32B with 2.0x multiplier (Good for RTX 4090)
-MODEL_NAME=qwen2.5:32b QA_MULTIPLIER=2.0 ./runpod_setup.sh
 
 # Use Qwen2.5:14B with 2.0x multiplier (Budget/Testing)
 MODEL_NAME=qwen2.5:14b QA_MULTIPLIER=2.0 ./runpod_setup.sh
@@ -314,6 +314,17 @@ The script will detect the checkpoint and continue from where it left off.
 - **Use screen/tmux**: Prevents job interruption if SSH disconnects
 
 ## Troubleshooting
+
+### Screen Command Not Found
+```bash
+# Install screen
+apt-get update && apt-get install -y screen
+
+# Or use nohup instead (no installation needed)
+nohup python scripts/qa_generator.py data/input -o data/output --model qwen2.5:72b --qa-multiplier 4.0 > qa_generation.log 2>&1 &
+
+# Monitor with: tail -f qa_generation.log
+```
 
 ### Ollama Service Not Running
 ```bash
