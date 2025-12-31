@@ -2,13 +2,7 @@
 
 This guide provides step-by-step instructions for running the PDF RAG Fine-tuning QA Generator on RunPod GPU instances for 5-10x faster processing.
 
-## Deployment Options
-
-- **Single GPU**: Best for 1-10 PDFs, simple setup → [Continue with this guide]
-- **Multi-GPU**: Best for 10+ PDFs, 2-8x faster → [See MULTIGPU_GUIDE.md](MULTIGPU_GUIDE.md)
-- **Comparison**: Compare all options → [See GPU_COMPARISON.md](GPU_COMPARISON.md)
-
-## Quick Start (5 Minutes Setup - Single GPU)
+## Quick Start (5 Minutes Setup)
 
 ### 1. Deploy RunPod GPU Instance
 
@@ -16,17 +10,16 @@ This guide provides step-by-step instructions for running the PDF RAG Fine-tunin
 2. Click **"Deploy"** → **"GPU Instances"**
 3. Choose a GPU (based on model size):
 
-   **For Qwen2.5:72B (Highest Quality - RECOMMENDED):**
-   - **Best**: NVIDIA A100 (40GB or 80GB) - ~$1.50-2.50/hr
-   - **Alternative**: NVIDIA H100 (80GB) - Premium option
-
-   **For Qwen2.5:32B (Great Balance - RECOMMENDED for 32 PDFs):**
-   - **Best Value**: 2x NVIDIA A40 (48GB) - ~$1.40/hr total → [Multi-GPU Guide](MULTIGPU_GUIDE.md)
-   - **Single GPU**: NVIDIA RTX 4090 (24GB) - ~$0.50-0.80/hr
+   **For Qwen2.5:32B (RECOMMENDED):**
+   - **Best**: NVIDIA RTX 4090 (24GB) - ~$0.50-0.80/hr
    - **Alternative**: NVIDIA A40/L40 (48GB) - ~$0.60-0.80/hr
 
    **For Qwen2.5:14B (Budget):**
    - RTX 3090 (24GB) - ~$0.30-0.50/hr
+
+   **For Qwen2.5:72B (Highest Quality):**
+   - NVIDIA A100 (40GB or 80GB) - ~$1.50-2.50/hr
+   - NVIDIA H100 (80GB) - Premium option
 
 4. Select template: **"RunPod Pytorch"** or **"RunPod Ubuntu"**
 5. Set disk space: **100GB minimum** (models are large)
@@ -34,9 +27,7 @@ This guide provides step-by-step instructions for running the PDF RAG Fine-tunin
    - **Spot** (Recommended): 50-70% cheaper, auto-resume if interrupted
    - **On-Demand**: Guaranteed availability, no interruptions
 
-   💡 **Recommendation**: Use **Spot** and save $6-13! Your script auto-resumes from checkpoints.
-
-   See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for detailed comparison.
+   💡 **Recommendation**: Use **Spot** and save 50-70%! Your script auto-resumes from checkpoints.
 
 ### 2. Connect to Your Pod
 
@@ -81,7 +72,7 @@ The script will automatically:
 
 **Alternative Models and Multipliers:**
 ```bash
-# Use default (Qwen2.5:32B with 2.0x - RECOMMENDED for 32 PDFs)
+# Use default (Qwen2.5:32B with 2.0x - RECOMMENDED)
 ./runpod_setup.sh
 
 # Use Qwen2.5:14B with 2.0x multiplier (Budget)
@@ -178,23 +169,17 @@ git push
 
 ## Performance Comparison
 
-### Single GPU vs Multi-GPU (32 PDFs, 2.0x Multiplier)
+### GPU Options for 32 PDFs (2.0x Multiplier)
 
 | Configuration | Model | Total Time | QA Pairs | Cost (On-Demand) | Cost (Spot) |
 |---------------|-------|------------|----------|------------------|-------------|
 | **Local CPU** | qwen2.5:14b | 320-448 hrs | 19,648 | Free | - |
-| **1x RTX 4090** | qwen2.5:32b | 64-128 hrs | 19,648 | $26-77 | $10-31 |
-| **1x A40** | qwen2.5:32b | 38-77 hrs | 19,648 | $23-62 | $9-25 |
-| **2x A40** ⭐ | qwen2.5:32b | **19-38 hrs** | 19,648 | **$27-53** | **$11-21** |
-| **4x A40** | qwen2.5:32b | **10-19 hrs** | 19,648 | $44-120 | $18-48 |
+| **RTX 3090** | qwen2.5:14b | 64-128 hrs | 19,648 | $19-64 | $8-26 |
+| **RTX 4090** ⭐ | qwen2.5:32b | 64-128 hrs | 19,648 | $26-77 | $10-31 |
+| **A40/L40** | qwen2.5:32b | 38-77 hrs | 19,648 | $23-62 | $9-25 |
+| **A100** | qwen2.5:72b | 32-64 hrs | 39,296 | $60-159 | $24-64 |
 
-**Multi-GPU Benefits:**
-- 🚀 **2-4x faster** processing time
-- 💰 **Same total cost** (faster completion, not higher cost)
-- 📦 **Easy setup** with automated scripts
-- ✅ **Automatic PDF distribution** across GPUs
-
-**For 32 PDFs: 2x A40 is RECOMMENDED** → [Multi-GPU Guide](MULTIGPU_GUIDE.md)
+**Best Value: RTX 4090 with Spot pricing = $10-31 for 32 PDFs!**
 
 ### Quality Comparison by Model
 
@@ -216,13 +201,13 @@ The setup script accepts environment variables for customization:
 
 ```bash
 # Use a different model
-MODEL_NAME=qwen2.5:7b ./runpod_setup.sh
+MODEL_NAME=qwen2.5:14b ./runpod_setup.sh
 
 # Change QA multiplier
 QA_MULTIPLIER=1.5 ./runpod_setup.sh
 
 # Combine both
-MODEL_NAME=qwen2.5:7b QA_MULTIPLIER=1.5 ./runpod_setup.sh
+MODEL_NAME=qwen2.5:14b QA_MULTIPLIER=1.5 ./runpod_setup.sh
 ```
 
 ## Advanced Usage
@@ -272,27 +257,25 @@ The script will detect the checkpoint and continue from where it left off.
 
 ### 1. Use Spot Instances (Recommended) ⭐
 
-**Spot 2x A40 with qwen2.5:32b is the best value:**
-- Cost: $11-21 (vs $27-53 on-demand)
-- **Savings: 50-70%** ($16-32 saved)
+**Spot RTX 4090 with qwen2.5:32b is the best value:**
+- Cost: $10-31 (vs $26-77 on-demand)
+- **Savings: 50-70%**
 - Auto-resume from checkpoint if interrupted
 - Low risk during off-peak hours (2am-8am EST, weekends)
 
 **When to use Spot:**
 - ✅ You can monitor the job periodically
 - ✅ Running during off-peak hours
-- ✅ Want to save $6-13 with minimal risk
+- ✅ Want to save 50-70% on costs
 
 **When to use On-Demand:**
 - Critical deadline < 24 hours
 - Need guaranteed completion
 - Running during peak business hours
 
-See [SPOT_VS_ONDEMAND.md](SPOT_VS_ONDEMAND.md) for full analysis.
-
 ### 2. Other Cost-Saving Tips
 - **Auto-shutdown**: Set up auto-stop in RunPod settings when job completes
-- **Right-size GPU**: Match GPU to model size (2x A40 for 32b, RTX 4090 for 14b)
+- **Right-size GPU**: Match GPU to model size (RTX 4090 for 32b, RTX 3090 for 14b, A100 for 72b)
 - **Monitor usage**: Stop the pod immediately when job completes
 - **Off-peak hours**: Deploy during low-demand times for best Spot availability
 
@@ -337,17 +320,14 @@ screen -r qa_gen
 
 ## Estimated Costs for 32 PDFs (2.0x Multiplier)
 
-| Configuration | Hourly Rate | Processing Time | On-Demand Cost | Spot Cost |
-|---------------|-------------|-----------------|----------------|-----------|
-| **1x RTX 4090** | $0.40-0.60/hr | 64-128 hrs | $26-77 | $10-31 |
-| **1x A40** | $0.60-0.80/hr | 38-77 hrs | $23-62 | $9-25 |
-| **2x A40** ⭐ | $1.40/hr | 19-38 hrs | **$27-53** | **$11-21** |
-| **4x A40** | $2.80/hr | 10-19 hrs | $44-120 | $18-48 |
-| **1x A100** | $1.89-2.49/hr | 32-64 hrs | $60-159 | $24-64 |
+| GPU | Hourly Rate | Processing Time | On-Demand Cost | Spot Cost |
+|-----|-------------|-----------------|----------------|-----------|
+| **RTX 3090** | $0.30-0.50/hr | 64-128 hrs | $19-64 | $8-26 |
+| **RTX 4090** ⭐ | $0.40-0.60/hr | 64-128 hrs | $26-77 | **$10-31** |
+| **A40/L40** | $0.60-0.80/hr | 38-77 hrs | $23-62 | $9-25 |
+| **A100** | $1.89-2.49/hr | 32-64 hrs | $60-159 | $24-64 |
 
-**Best Value: 2x A40 with Spot pricing = $11-21 for 32 PDFs!**
-
-*Note: Multi-GPU costs same total but finishes 2-4x faster*
+**Best Value: RTX 4090 with Spot pricing = $10-31 for 32 PDFs!**
 
 ## Next Steps
 
