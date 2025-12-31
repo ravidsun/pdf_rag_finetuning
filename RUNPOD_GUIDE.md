@@ -93,10 +93,13 @@ MODEL_NAME=llama3.1:70b QA_MULTIPLIER=3.5 ./runpod_setup.sh
 **Option A: Using SCP (from your local machine)**
 ```bash
 # Upload single file
-scp "D:\MyProjects\data\input\your-file.pdf" root@runpod-ip:/workspace/pdf_rag_finetuning/data/input/
+scp /local/path/to/your-file.pdf root@runpod-ip:/workspace/pdf_rag_finetuning/data/input/
 
 # Upload all PDFs
-scp "D:\MyProjects\data\input\*.pdf" root@runpod-ip:/workspace/pdf_rag_finetuning/data/input/
+scp /local/path/to/*.pdf root@runpod-ip:/workspace/pdf_rag_finetuning/data/input/
+
+# Windows example:
+# scp C:\PDFs\*.pdf root@runpod-ip:/workspace/pdf_rag_finetuning/data/input/
 ```
 
 **Option B: Using RunPod Web Interface**
@@ -170,7 +173,11 @@ wc -l data/output/*.jsonl
 
 **From your local machine:**
 ```bash
-scp root@runpod-ip:/workspace/pdf_rag_finetuning/data/output/*.jsonl "D:\MyProjects\data\output\"
+# Linux/Mac
+scp root@runpod-ip:/workspace/pdf_rag_finetuning/data/output/*.jsonl /local/path/to/output/
+
+# Windows
+# scp root@runpod-ip:/workspace/pdf_rag_finetuning/data/output/*.jsonl C:\output\
 ```
 
 **Or push to GitHub:**
